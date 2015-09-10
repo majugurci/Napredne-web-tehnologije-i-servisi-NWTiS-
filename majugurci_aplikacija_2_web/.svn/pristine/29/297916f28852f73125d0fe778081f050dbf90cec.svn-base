@@ -1,0 +1,50 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:f="http://xmlns.jcp.org/jsf/core"
+      xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+      xmlns:h="http://xmlns.jcp.org/jsf/html">
+    <f:view locale="#{lokalizacija.vazecaLokalizacija}">
+
+        <f:metadata>
+            <f:event type="preRenderView" listener="#{lokalizacija.init}"/>
+        </f:metadata>
+
+        <ui:composition template="./predlozak.xhtml">
+
+            <ui:define name="naslov">
+                Index
+            </ui:define>
+
+            <ui:define name="navigacija">
+                <h:form>
+                    <li><h:link outcome="index.xhtml" value="#{m.indexOdabirAkcije_linkIndeks}" /></li>
+                    <h:panelGroup rendered="#{indexOdabirAkcije.korisnikLogiran == false}">
+                        <li><h:link outcome="login.xhtml" value="#{m.indexOdabirAkcije_linkLogin}" /></li>
+                        <li><h:link outcome="register.xhtml" value="#{m.indexOdabirAkcije_linkRegister}" /><br/></li>
+                    </h:panelGroup>
+                    <h:panelGroup rendered="#{indexOdabirAkcije.korisnikLogiran == true}">
+                        <li><h:commandLink action="#{indexOdabirAkcije.odjavaKorisnika}" value="#{m.indexOdabirAkcije_linkLogout}" /></li>
+                        <li><h:link outcome="/privatno/nadopuniPodatke.xhtml" value="Ažuriraj podatke"/></li>
+                    </h:panelGroup>
+                </h:form>
+            </ui:define>
+
+            <ui:define name="sadrzaj">
+                <h1>Početna stranica</h1>
+
+                <article>
+
+                    <p>Odaberite jedan od linkova za nastavak.</p>
+                    
+                    <h:panelGroup rendered="#{indexOdabirAkcije.korisnikLogiran == false}">
+                        <p>Nakon što se prijavite imate mogućnost odabira za ostale akcije.</p>
+                    </h:panelGroup>
+                    
+
+                </article>
+            </ui:define>
+        </ui:composition>
+    </f:view>
+</html>
+

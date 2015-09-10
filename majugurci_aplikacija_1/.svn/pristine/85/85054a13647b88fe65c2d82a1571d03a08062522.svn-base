@@ -1,0 +1,632 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package org.foi.nwtis.majugurci.socketServer;
+
+import java.io.BufferedInputStream;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.Socket;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import org.foi.nwtis.majugurci.konfiguracije.bp.BP_Konfiguracija;
+import org.foi.nwtis.majugurci.rest.klijenti.GMKlijent;
+import org.foi.nwtis.majugurci.web.podaci.Lokacija;
+
+/**
+ *
+ * @author Mario
+ */
+public class ServerObradaDretva extends Thread {
+
+    private final MeteoPodaciDretva mpd;
+    private final BP_Konfiguracija konfigBP;
+    private final Socket socket;
+    private final SocketServer ss;
+    private final String cjenik;
+
+    //podaci za spajanje na bazu podataka
+    private final String server;
+    private final String baza;
+    private final String korisnik;
+    private final String lozinka;
+    private final String driver;
+
+    private final String sintaksa2Provjera = "^USER ([\\w-_]+); PASSWD ([\\w-_#!]+);$";
+    private final String sintaksa2Dodavanje = "^ADD ([\\w-_]+); PASSWD ([\\w-_#!]+);$";
+    private final String sintaksa3AdminPause = "^USER ([\\w-_]+); PASSWD ([\\w-_#!]+); PAUSE;$";
+    private final String sintaksa3AdminStart = "^USER ([\\w-_]+); PASSWD ([\\w-_#!]+); START;$";
+    private final String sintaksa3AdminStop = "^USER ([\\w-_]+); PASSWD ([\\w-_#!]+); STOP;$";
+    private final String sintaksa3AdminAdmin = "^USER ([\\w-_]+); PASSWD ([\\w-_#!]+); ADMIN ([\\w-_]+);$";
+    private final String sintaksa3AdminNoAdmin = "^USER ([\\w-_]+); PASSWD ([\\w-_#!]+); NOADMIN ([\\w-_]+);$";
+    private final String sintaksa3AdminDownload = "^USER ([\\w-_]+); PASSWD ([\\w-_#!]+); DOWNLOAD;$";
+    private final String sintaksa3UserAdd = "^USER ([\\w-_]+); PASSWD ([\\w-_#!]+); ADD \"([^\"]+)\";$";
+    private final String sintaksa3UserTest = "^USER ([\\w-_]+); PASSWD ([\\w-_#!]+); TEST \"([^\"]+)\";$";
+    private final String sintaksa3UserGet = "^USER ([\\w-_]+); PASSWD ([\\w-_#!]+); GET \"([^\"]+)\";$";
+    private final String sintaksa3UserType = "^USER ([\\w-_]+); PASSWD ([\\w-_#!]+); TYPE;$";
+    private final String sintaksa4AdminUpload = "^USER ([\\w-_]+); PASSWD ([\\w-_#!]+); UPLOAD (\\d+);\r\n(.+)$";
+
+    ServerObradaDretva(MeteoPodaciDretva mpd, BP_Konfiguracija konfigBP, Socket socket, SocketServer ss, String cjenik) {
+        this.mpd = mpd;
+        this.konfigBP = konfigBP;
+        this.socket = socket;
+        this.ss = ss;
+        this.cjenik = cjenik;
+
+        server = konfigBP.getServer_database();
+        baza = server + konfigBP.getUser_database();
+        korisnik = konfigBP.getUser_username();
+        lozinka = konfigBP.getUser_password();
+        driver = konfigBP.getDriver_database(server);
+    }
+
+    @Override
+    public void interrupt() {
+        super.interrupt(); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public void run() {
+        long pocetak = System.currentTimeMillis();
+        System.out.println("Pozivam obradu dretve: " + this.getName());
+
+        InputStream is = null;
+        OutputStream os = null;
+
+        String komanda = "";
+        String odgovor = "";
+
+        try {
+            is = socket.getInputStream();
+            os = socket.getOutputStream();
+
+            StringBuilder sb = new StringBuilder();
+
+            // ovaj sleep je potreban jer metoda available za inputStream dobije
+            // podatke prekasno i vraća rezultat 0 prije nego su podaci
+            // uopće dospjeli na stream te se nikad i ne izvrsi citanje streama,
+            // ovako uz malu odgodu pomocu sleep-a se uredno cita sa stream-a
+            try {
+                sleep(100);
+            } catch (InterruptedException ex) {
+                Logger.getLogger(TESTServerSocket.class.getName()).log(Level.SEVERE, null, ex);
+            }
+            
+            BufferedReader in = new BufferedReader(new InputStreamReader(is, "ISO-8859-2"));
+
+            /*while (is.available() > 0) {
+                int znak = is.read();
+                if (znak == -1) {
+                    break;
+                }
+                sb.append((char) znak);
+            }*/
+            
+            String linija;
+            
+            List<String> linije = new ArrayList<>();
+            
+            while ((linija = in.readLine()) != null) {
+                linije.add(linija);
+            }
+            
+            for (String l : linije) {
+                System.out.println("velicina liste: " + linije.size());
+                System.out.println(l);
+            }
+
+            komanda = sb.toString();
+
+            System.out.println(komanda);
+
+            String[] zahtjev = komanda.split(";");
+            int duzina = zahtjev.length;
+
+            Matcher m = null;
+
+            //sintaksa2
+            if (duzina == 2) {
+
+                if (zahtjev[0].startsWith("USER")) {
+                    m = provjeraParametara(komanda, sintaksa2Provjera);
+
+                    if (m != null) {
+                        boolean autentikacija = provjeriKorImeILozinku(m.group(1), m.group(2));
+
+                        if (autentikacija) {
+                            odgovor = "OK 10;";
+                        } else {
+                            odgovor = "ERR 20;";
+                        }
+                    }
+                } else if (zahtjev[0].startsWith("ADD")) {
+                    //TODO add
+                }
+            } else if (duzina == 3) {
+                //sintaksa3
+
+                if (zahtjev[2].equals(" PAUSE")) {
+                    m = provjeraParametara(komanda, sintaksa3AdminPause);
+
+                    if (m != null) {
+                        boolean autentikacija = provjeriKorImeILozinku(m.group(1), m.group(2));
+
+                        if (autentikacija) {
+                            int grupaKorisnika = provjeriGrupuKorisnika(m.group(1));
+                            if (grupaKorisnika == 1) {
+                                //admin
+                                if (mpd.isPauzaRada()) {
+                                    odgovor = "ERR 30;";
+                                } else {
+                                    mpd.setPauzaRada(true);
+                                    odgovor = "OK 10;";
+                                }
+                            } else if (grupaKorisnika == 2) {
+                                //korisnik
+                                odgovor = "ERR 21;";
+                            }
+                        } else {
+                            odgovor = "ERR 20;";
+                        }
+                    }
+                } else if (zahtjev[2].equals(" START")) {
+                    m = provjeraParametara(komanda, sintaksa3AdminStart);
+
+                    if (m != null) {
+                        boolean autentikacija = provjeriKorImeILozinku(m.group(1), m.group(2));
+
+                        if (autentikacija) {
+
+                            int grupaKorisnika = provjeriGrupuKorisnika(m.group(1));
+                            if (grupaKorisnika == 1) {
+                                //admin
+                                if (!mpd.isPauzaRada()) {
+                                    odgovor = "ERR 31;";
+                                } else {
+                                    mpd.setPauzaRada(false);
+                                    odgovor = "OK 10;";
+                                }
+                            } else if (grupaKorisnika == 2) {
+                                //korisnik
+                                odgovor = "ERR 21;";
+                            }
+                        } else {
+                            odgovor = "ERR 20;";
+                        }
+                    }
+                } else if (zahtjev[2].equals(" STOP")) {
+                    m = provjeraParametara(komanda, sintaksa3AdminStop);
+
+                    if (m != null) {
+                        boolean autentikacija = provjeriKorImeILozinku(m.group(1), m.group(2));
+
+                        if (autentikacija) {
+
+                            int grupaKorisnika = provjeriGrupuKorisnika(m.group(1));
+                            if (grupaKorisnika == 1) {
+                                //admin
+
+                                //serverSocket se zaustavlja iz dretve
+                                // ako je u postupku zaustavljanja
+                                if (mpd.isZavrsiRad()) {
+                                    odgovor = "ERR 32;";
+                                } else {    //pozovi prekidanje dretve i servera
+                                    if (mpd.isSleeping()) {
+                                        //ako dretva spava pozovi interrup
+                                        mpd.setSocketServer(ss);
+                                        mpd.interrupt();
+                                    } else {
+                                        //ako ne spava postavi zastavicu
+                                        mpd.setSocketServer(ss);
+                                        mpd.setZavrsiRad(true);
+                                    }
+
+                                    odgovor = "OK 10;";
+                                }
+
+                            } else if (grupaKorisnika == 2) {
+                                //korisnik
+                                odgovor = "ERR 21;";
+                            }
+                        } else {
+                            odgovor = "ERR 20;";
+                        }
+                    }
+                } else if (zahtjev[2].startsWith(" ADMIN")) {
+                    m = provjeraParametara(komanda, sintaksa3AdminAdmin);
+
+                    if (m != null) {
+                        boolean autentikacija = provjeriKorImeILozinku(m.group(1), m.group(2));
+
+                        if (autentikacija) {
+
+                            int grupaKorisnika = provjeriGrupuKorisnika(m.group(1));
+                            if (grupaKorisnika == 1) {
+                                //admin
+
+                                int grupaKorisnikaIzKomande = provjeriGrupuKorisnika(m.group(3));
+
+                                if (grupaKorisnikaIzKomande == 0) {
+                                    //nepostojeci korisnik
+                                    odgovor = "ERR 33;";
+                                } else if (grupaKorisnikaIzKomande == 1) {
+                                    odgovor = "ERR 34;";
+                                } else if (grupaKorisnikaIzKomande == 2) {
+                                    promijeniUloguKorisnika(m.group(3), 1);
+                                    odgovor = "OK 10;";
+                                }
+
+                            } else if (grupaKorisnika == 2) {
+                                //korisnik
+                                odgovor = "ERR 21;";
+                            }
+                        } else {
+                            odgovor = "ERR 20;";
+                        }
+                    }
+                } else if (zahtjev[2].startsWith(" NOADMIN")) {
+                    m = provjeraParametara(komanda, sintaksa3AdminNoAdmin);
+
+                    if (m != null) {
+                        boolean autentikacija = provjeriKorImeILozinku(m.group(1), m.group(2));
+
+                        if (autentikacija) {
+
+                            int grupaKorisnika = provjeriGrupuKorisnika(m.group(1));
+                            if (grupaKorisnika == 1) {
+                                //admin
+
+                                int grupaKorisnikaIzKomande = provjeriGrupuKorisnika(m.group(3));
+
+                                if (grupaKorisnikaIzKomande == 0) {
+                                    //nepostojeci korisnik                    
+                                    odgovor = "ERR 33;";
+                                } else if (grupaKorisnikaIzKomande == 1) {
+                                    promijeniUloguKorisnika(m.group(3), 2);
+                                    odgovor = "OK 10;";
+                                } else if (grupaKorisnikaIzKomande == 2) {
+                                    odgovor = "ERR 35;";
+                                }
+
+                            } else if (grupaKorisnika == 2) {
+                                //korisnik
+                                odgovor = "ERR 21;";
+                            }
+                        } else {
+                            odgovor = "ERR 20;";
+                        }
+                    }
+                } else if (zahtjev[2].equals(" DOWNLOAD")) {
+                    m = provjeraParametara(komanda, sintaksa3AdminDownload);
+
+                    if (m != null) {
+                        boolean autentikacija = provjeriKorImeILozinku(m.group(1), m.group(2));
+
+                        if (autentikacija) {
+
+                            int grupaKorisnika = provjeriGrupuKorisnika(m.group(1));
+                            if (grupaKorisnika == 1) {
+                                //admin
+
+                                File cjenikFile = new File(cjenik);
+
+                                if (cjenikFile.exists()) {
+
+                                    byte[] mybytearray = new byte[(int) cjenikFile.length()];
+                                    BufferedInputStream bis = new BufferedInputStream(new FileInputStream(cjenikFile));
+                                    bis.read(mybytearray, 0, mybytearray.length);
+                                    String procitanaDatoteka = Arrays.toString(mybytearray);
+                                    int velicinaDatoteke = mybytearray.length;
+
+                                    odgovor = "OK 10; DATA " + velicinaDatoteke + ";\r\n" + procitanaDatoteka;
+                                } else {
+                                    //cjenik ne postoji
+                                    odgovor = "ERR 36;";
+                                }
+
+                            } else if (grupaKorisnika == 2) {
+                                //korisnik
+                                odgovor = "ERR 21;";
+                            }
+                        } else {
+                            odgovor = "ERR 20;";
+                        }
+                    }
+                } else if (zahtjev[2].startsWith(" ADD")) {
+                    m = provjeraParametara(komanda, sintaksa3UserAdd);
+
+                    if (m != null) {
+                        boolean autentikacija = provjeriKorImeILozinku(m.group(1), m.group(2));
+
+                        if (autentikacija) {
+
+                            String adresa = m.group(3);
+                            Lokacija l = dajLokaciju(adresa);
+                            if (l == null) {
+                                odgovor = "ERR 40;";
+                            } else {
+                                if (provjeriAdresu(adresa)) {
+                                    odgovor = "ERR 41;";
+                                } else {
+                                    //dodaj adresu u bazu
+                                    dodajAdresuUBP(m.group(1), adresa, l);
+                                }
+                            }
+                        } else {
+                            odgovor = "ERR 20;";
+                        }
+                    }
+                }
+            }
+
+            if (m == null) {
+                //komanda nije dobra
+                odgovor = "ERR 99; Neipsravna komanda";
+            }
+
+            os.write(odgovor.getBytes());
+
+        } catch (IOException ex) {
+            //exception za is i os
+            Logger.getLogger(ServerObradaDretva.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
+        if (is != null) {
+            try {
+                is.close();
+            } catch (IOException ex) {
+                Logger.getLogger(ServerObradaDretva.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+
+        if (os != null) {
+            try {
+                os.close();
+            } catch (IOException ex) {
+                Logger.getLogger(ServerObradaDretva.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+
+        if (socket != null) {
+            try {
+                socket.close();
+            } catch (IOException ex) {
+                Logger.getLogger(ServerObradaDretva.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+
+    }
+
+    @Override
+    public synchronized void start() {
+        super.start(); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    /**
+     * Provjera pruženog string-a u odnosu pruženu sintaksu
+     *
+     * @param p string
+     * @param sintaksa regex izraz
+     * @return objekt tipa Matcher ili null ako ne odgovara
+     */
+    public Matcher provjeraParametara(String p, String sintaksa) {
+        Pattern pattern = Pattern.compile(sintaksa);
+        Matcher m = pattern.matcher(p);
+        boolean status = m.matches();
+        if (status) {
+            return m;
+        } else {
+            return null;
+        }
+    }
+
+    /**
+     * Provjerava postoji li korisnik u bazi podataka i je li lozinka točna
+     *
+     * @param korisnik ime korisnika
+     * @param lozinka lozinka korisnika
+     * @return true - uspjesna autentikacija, false inace
+     */
+    private boolean provjeriKorImeILozinku(String korisnik, String lozinka) {
+
+        String sqlUpit = "SELECT k.korisnicko_ime, g.opis FROM majugurci_korisnici k "
+                + "JOIN majugurci_grupe g ON k.grupa = g.id_grupa "
+                + "WHERE korisnicko_ime=? AND lozinka=?";
+
+        try (Connection con = DriverManager.getConnection(this.baza, this.korisnik, this.lozinka);
+                PreparedStatement ps = con.prepareStatement(sqlUpit);) {
+
+            ps.setString(1, korisnik);
+            ps.setString(2, lozinka);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+
+        } catch (SQLException ex) {
+            Logger.getLogger(ServerObradaDretva.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
+        return false;
+    }
+
+    /**
+     * Daje uloga korisnika u sustavi
+     *
+     * @param korisnik ime korisnika
+     * @return 0 - nepostojeci korisnik, 1 - admin, 2 - obican korisnik
+     */
+    private int provjeriGrupuKorisnika(String korisnik) {
+
+        String sqlUpit = "SELECT k.korisnicko_ime, g.opis FROM majugurci_korisnici k "
+                + "JOIN majugurci_grupe g ON k.grupa = g.id_grupa "
+                + "WHERE korisnicko_ime=?";
+
+        try (Connection con = DriverManager.getConnection(this.baza, this.korisnik, this.lozinka);
+                PreparedStatement ps = con.prepareStatement(sqlUpit);) {
+
+            ps.setString(1, korisnik);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    if (rs.getString("opis").equals("admin")) {
+                        return 1;
+                    } else if (rs.getString("opis").equals("korisnik")) {
+                        return 2;
+                    } else {
+                        //ako se doda neka korisnicka grupa u buducnosti
+                    }
+                } else {
+                    return 0;
+                }
+            }
+
+        } catch (SQLException ex) {
+            Logger.getLogger(ServerObradaDretva.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
+        return 0;
+    }
+
+    /**
+     * Mijenja ulogu korisnika u sustavu
+     *
+     * @param korisnik ime korisnika
+     * @param zeljenaUloga ime korisnika
+     */
+    private void promijeniUloguKorisnika(String korisnik, int zeljenaUloga) {
+
+        String sqlUpit = "UPDATE majugurci_korisnici SET grupa = ? WHERE korisnicko_ime = ?";
+
+        try (Connection con = DriverManager.getConnection(this.baza, this.korisnik, this.lozinka);
+                PreparedStatement ps = con.prepareStatement(sqlUpit);) {
+
+            ps.setLong(1, zeljenaUloga);
+            ps.setString(2, korisnik);
+
+            ps.executeUpdate();
+
+        } catch (SQLException ex) {
+            Logger.getLogger(ServerObradaDretva.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+    
+    /**
+     * Daje id korisnika na temelju korisnickog imena
+     *
+     * @param korisnik ime korisnika
+     * @return id korisnika, 0 ako ne postoji
+     */
+    private int dajKorisnickiID(String korisnik) {
+
+        String sqlUpit = "SELECT id_korisnik FROM majugurci_korisnici "
+                + "WHERE korisnik = ?";
+
+        try (Connection con = DriverManager.getConnection(this.baza, this.korisnik, this.lozinka);
+                PreparedStatement ps = con.prepareStatement(sqlUpit);) {
+
+            ps.setString(1, korisnik);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return (rs.getInt("id_korisnik"));
+                } else {
+                    return 0;
+                }
+            }
+
+        } catch (SQLException ex) {
+            Logger.getLogger(ServerObradaDretva.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
+        return 0;
+    }
+    
+    /**
+     * Provjera posotji li adresa u bazi podataka
+     *
+     * @param korisnik adresa
+     * @return true - adresa postoji, false inace
+     */
+    private boolean provjeriAdresu(String adresa) {
+        
+        String sqlUpit = "SELECT adresa FROM majugurci_adrese WHERE adresa = ?";
+
+        try (Connection con = DriverManager.getConnection(this.baza, this.korisnik, this.lozinka);
+                PreparedStatement ps = con.prepareStatement(sqlUpit);) {
+
+            ps.setString(1, adresa);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+
+        } catch (SQLException ex) {
+            Logger.getLogger(ServerObradaDretva.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
+        return false;
+    }
+    
+    /**
+     * Dodaje adresu u bazu podataka
+     *
+     * @param korisnik ime korisnika
+     * @param adresa ime adrese
+     * @param lokacija geolokacijski podaci
+     */
+    private void dodajAdresuUBP(String korisnik, String adresa, Lokacija lokacija) {
+        
+        String insertTableSQL = "INSERT INTO DBUSER"
+		+ "(USER_ID, USERNAME, CREATED_BY, CREATED_DATE) VALUES"
+		+ "(?,?,?,?)";
+
+        String sqlUpit = "INSERT INTO majugurci_adrese (korisnik, adresa, latitude, longitude) "
+                + "VALUES (?, ?, ?, ?)";
+
+        try (Connection con = DriverManager.getConnection(this.baza, this.korisnik, this.lozinka);
+                PreparedStatement ps = con.prepareStatement(sqlUpit);) {
+
+            ps.setInt(1, dajKorisnickiID(korisnik));
+            ps.setString(2, adresa);
+            ps.setString(3, lokacija.getLatitude());
+            ps.setString(4, lokacija.getLongitude());
+
+            ps.executeUpdate();
+
+        } catch (SQLException ex) {
+            Logger.getLogger(ServerObradaDretva.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+    
+    private Lokacija dajLokaciju(String adresa) {
+        GMKlijent gmk = new GMKlijent();
+        Lokacija l = gmk.getGeoLocation(adresa);
+        return l;
+    }
+}

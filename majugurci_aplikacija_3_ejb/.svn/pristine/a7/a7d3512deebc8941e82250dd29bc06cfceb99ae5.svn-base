@@ -1,0 +1,170 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package org.foi.nwtis.majugurci.ejb.mdb;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import static java.lang.Thread.sleep;
+import java.net.Socket;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.ejb.ActivationConfigProperty;
+import javax.ejb.EJB;
+import javax.ejb.MessageDriven;
+import javax.faces.context.FacesContext;
+import javax.jms.JMSException;
+import javax.jms.Message;
+import javax.jms.MessageListener;
+import javax.jms.ObjectMessage;
+import javax.servlet.ServletContext;
+import org.foi.nwtis.majugurci.ejb.SpremisteJMSPoruka;
+import org.foi.nwtis.majugurci.web.podaci.PodaciDodanaAdresa;
+
+/**
+ *
+ * @author Mario
+ */
+@MessageDriven(activationConfig = {
+    @ActivationConfigProperty(propertyName = "destinationLookup", propertyValue = "jms/NWTiS_majugurci_2"),
+    @ActivationConfigProperty(propertyName = "destinationType", propertyValue = "javax.jms.Queue")
+})
+public class AdreseMDB implements MessageListener {
+
+    @EJB
+    private SpremisteJMSPoruka spremisteJMSPoruka;
+
+    public AdreseMDB() {
+    }
+
+    @Override
+    public void onMessage(Message message) {
+        try {
+            ObjectMessage om = (ObjectMessage) message;
+            PodaciDodanaAdresa pda = (PodaciDodanaAdresa) om.getObject();
+            spremisteJMSPoruka.dodajAdresePoruku(pda);
+            String adresa = pda.getAdresa();
+            String korisnik = pda.getKorisnik();
+            String lozinka = pda.getLozinka();
+            
+            String komanda = "USER " + korisnik + "; PASSWD " + lozinka + "; TEST \"" + adresa + "\";";
+            String odgovorServera = posaljiZahtjev(komanda);
+            if (odgovorServera.equals("ERR 20;")) {
+                //korisnik nije autenticiran, ne salji dalje
+            } else if (odgovorServera.equals("ERR 42;")) {
+                //korisnik nema sredstva, ne salji dalje
+            } else if (odgovorServera.equals("OK 10;")) {
+                //adresa vec postoji, ne salji dalje
+            } else if (odgovorServera.equals("ERR 42;")) {
+                //sve je u redu i mozes poslati zahtjev za dodavanjem adrese
+                komanda = "USER " + korisnik + "; PASSWD " + lozinka + "; ADD \"" + adresa + "\";";
+                odgovorServera = posaljiZahtjev(komanda);
+                if (odgovorServera.equals("OK 10;")) {
+                    //adresa je uspjesno unesena
+                } else {
+                    //dogodio se problem s dodavanjem adrese
+                }
+            }
+        } catch (JMSException ex) {
+            Logger.getLogger(AdreseMDB.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+
+    
+    /**
+     * Otvara vezu prema serveru te mu šalje zahtjev
+     *
+     * @param komanda zahtjev koji se šalje serveru
+     * @return odgovor od servera (String)
+     */
+    private String posaljiZahtjev(String komanda) {
+        String server = spremisteJMSPoruka.getServer();
+        int port = spremisteJMSPoruka.getPort();
+
+        String porukaServera = null;
+
+        InputStream is = null;
+        OutputStream os = null;
+        Socket socket = null;
+        StringBuilder sb = null;
+
+        try {
+            socket = new Socket(server, port);
+        } catch (IOException ex) {
+            //Logger.getLogger(AdministratorSustava.class.getName()).log(Level.SEVERE, null, ex);
+            return "Problem u spajanju na socket server";
+        }
+
+        try {
+            os = socket.getOutputStream();
+            is = socket.getInputStream();
+
+            os.write(komanda.getBytes());
+            os.flush();
+
+            socket.shutdownOutput();
+
+            sb = new StringBuilder();
+
+            // Klijent ceka do 5 sekundi na odgovor servera
+            for (int i = 0; i < 100; i++) {
+                if (is.available() > 0) {
+                    while (is.available() > 0) {
+                        int znak = is.read();
+                        if (znak == -1) {
+                            break;
+                        }
+                        sb.append((char) znak);
+                    }
+                    break;
+                } else {
+                    sleep(50);
+                }
+
+            }
+
+            while (is.available() > 0) {
+                int znak = is.read();
+                if (znak == -1) {
+                    break;
+                }
+                sb.append((char) znak);
+            }
+
+            porukaServera = sb.toString();
+
+        } catch (IOException ex) {
+            Logger.getLogger(AdreseMDB.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (InterruptedException ex) {
+            Logger.getLogger(AdreseMDB.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
+        if (is != null) {
+            try {
+                is.close();
+            } catch (IOException ex) {
+                Logger.getLogger(AdreseMDB.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+
+        if (os != null) {
+            try {
+                os.close();
+            } catch (IOException ex) {
+                Logger.getLogger(AdreseMDB.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+
+        try {
+            socket.close();
+        } catch (IOException ex) {
+            Logger.getLogger(AdreseMDB.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
+        return porukaServera;
+
+    }
+}

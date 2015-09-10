@@ -1,0 +1,115 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:f="http://xmlns.jcp.org/jsf/core"
+      xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+      xmlns:h="http://xmlns.jcp.org/jsf/html"
+      xmlns:p="http://primefaces.org/ui">
+    <f:view locale="#{lokalizacija.vazecaLokalizacija}">
+
+        <f:metadata>
+            <f:event type="preRenderView" listener="#{lokalizacija.init}"/>
+        </f:metadata>
+
+        <ui:composition template="/predlozak.xhtml">
+
+            <ui:define name="naslov">
+                Pregled korisnika
+            </ui:define>
+
+            <ui:define name="navigacija">         
+                <li><h:link outcome="/admin/korisnici.xhtml" value="Pregled korisnika"/></li>
+                <li><h:link outcome="/admin/dnevnikRada.xhtml" value="Dnevnik rada"/></li>
+            </ui:define>
+
+            <ui:define name="sadrzaj">
+                <h1>Pregled email poruka</h1>
+                <fieldset>
+                    <h:form id="forma">
+                        <article>
+                            <h:selectOneMenu value="#{pregledEmailPoruka.odabranaMapa}">
+                                <f:selectItems value="#{pregledEmailPoruka.mape}" />
+                            </h:selectOneMenu><br/>
+                            <h:commandButton value="Učitaj poruke" action="#{pregledEmailPoruka.dohvatiPoruke}"
+                                             class="formbutton">
+                                <f:ajax execute="@all" render="forma"/>
+                            </h:commandButton>
+                            <h:inputHidden id="nemaPoruka" value="nemaPoruka"/>
+                            <br/>
+                            <h:message style="color: blue; font-style: oblique;"
+                                       for="nemaPoruka"/>
+                            <p:dataTable value="#{pregledEmailPoruka.poruke}" var="p"
+                                         rows="10" paginator="true" rowsPerPageTemplate="10,20,50"
+                                         paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+                                         paginatorPosition="bottom"
+                                         style="margin-top: 30px;" rendered="#{pregledEmailPoruka.imaPoruka}"
+                                         selection="#{pregledEmailPoruka.odabranePoruke}" rowKey="#{p.id}">
+
+                                <f:facet name="header">
+                                    Obriši
+                                </f:facet>
+                                <p:column selectionMode="multiple" style="width:16px;text-align:center"/>
+
+                                <p:column headerText="Id">
+                                    #{p.id}
+                                </p:column>
+
+                                <p:column headerText="Šalje">
+                                    #{p.salje}
+                                </p:column>
+
+                                <p:column headerText="Vrijeme">
+                                    #{p.vrijeme}
+                                </p:column>
+
+                                <p:column style="width:64px;text-align: center" headerText="Detalji">
+                                    <p:commandButton update=":forma:porukaDetalji" oncomplete="PF('porukaDialog').show()" icon="ui-icon-search" title="Detalji">
+                                        <f:setPropertyActionListener value="#{p}" target="#{pregledEmailPoruka.odabranaPorukaPregled}" />
+                                    </p:commandButton>
+                                </p:column>
+
+                            </p:dataTable>
+                            <br/>
+                            <h:message style="color: red; font-style: oblique;"
+                                       for="obrisiPoruke"/>
+                            <br/>
+                            <h:commandButton value="Obriši poruke" rendered="#{pregledEmailPoruka.imaPoruka}"
+                                             id="obrisiPoruke" action="#{pregledEmailPoruka.obirisPoruke}" styleClass="formbutton">
+                                <f:ajax execute="@all" render="forma"/>
+                            </h:commandButton>
+                            <br/>
+
+                            <p:dialog header="Detalji poruke" widgetVar="porukaDialog" modal="true" showEffect="fade" hideEffect="fade" resizable="false">
+                                <p:outputPanel id="porukaDetalji" style="text-align:center;">
+                                    <p:panelGrid  columns="2" rendered="#{not empty pregledEmailPoruka.odabranaPorukaPregled}" columnClasses="label,value">
+                                        <f:facet name="header">
+                                            <p:outputLabel value="#{pregledEmailPoruka.odabranaPorukaPregled.id}"/>
+                                        </f:facet>
+
+                                        <h:outputText value="Vrsta:" />
+                                        <h:outputText value="#{pregledEmailPoruka.odabranaPorukaPregled.vrsta}" />
+                                        <h:outputText value="Veličina" />
+                                        <h:outputText value="#{pregledEmailPoruka.odabranaPorukaPregled.velicina}" />
+
+                                        <h:outputText value="Vrijeme slanja" />
+                                        <h:outputText value="#{pregledEmailPoruka.odabranaPorukaPregled.vrijeme}" />
+                                        <h:outputText value="Šalje" />
+                                        <h:outputText value="#{pregledEmailPoruka.odabranaPorukaPregled.salje}" />
+                                        <h:outputText value="Predmet" />
+                                        <h:outputText value="#{pregledEmailPoruka.odabranaPorukaPregled.predmet}" />
+                                        <h:outputText value="Tekst" />
+                                        <h:outputText value="#{pregledEmailPoruka.odabranaPorukaPregled.tekst}" />
+
+                                    </p:panelGrid>
+                                </p:outputPanel>
+                            </p:dialog>
+
+                        </article>
+
+                    </h:form>
+                </fieldset>
+            </ui:define>
+        </ui:composition>
+    </f:view>
+</html>
+

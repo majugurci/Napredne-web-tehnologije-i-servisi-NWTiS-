@@ -1,0 +1,20 @@
+CREATE TABLE majugurci_korisnici (
+	id_korisnik integer NOT NULL 
+                PRIMARY KEY GENERATED ALWAYS AS IDENTITY 
+                (START WITH 1, INCREMENT BY 1),
+	grupa INT NOT NULL,
+	korisnicko_ime VARCHAR(128) NOT NULL UNIQUE,
+	lozinka VARCHAR(128) NOT NULL,
+	ime VARCHAR(30) DEFAULT '',
+	prezime VARCHAR(50) DEFAULT '',
+	email VARCHAR(256) DEFAULT '',
+	sredstva NUMERIC(15,2) DEFAULT 0,
+	vrijeme_registracije TIMESTAMP not null DEFAULT CURRENT_TIMESTAMP,
+	prva_prijava integer NOT NULL DEFAULT 1,
+	CONSTRAINT majugurci_korisnici_FK1 FOREIGN KEY (grupa) REFERENCES majugurci_grupe (id_grupa)
+);
+
+INSERT INTO majugurci_korisnici (grupa, korisnicko_ime, lozinka, email, sredstva, prva_prijava) 
+	VALUES (1, 'admin', '123456', 'admin@foi.hr', 999999, 0);
+	INSERT INTO majugurci_korisnici (grupa, korisnicko_ime, lozinka, email, sredstva, prva_prijava) 
+	VALUES (2, 'pero', '123456', 'pero@foi.hr', 100, 0);

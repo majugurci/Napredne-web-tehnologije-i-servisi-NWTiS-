@@ -1,0 +1,608 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package org.foi.nwtis.majugurci.ws.serveri;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.annotation.Resource;
+import javax.jws.WebService;
+import javax.jws.WebMethod;
+import javax.jws.WebParam;
+import javax.servlet.ServletContext;
+import javax.swing.text.DateFormatter;
+import javax.xml.ws.WebServiceContext;
+import javax.xml.ws.handler.MessageContext;
+import org.codehaus.jettison.json.JSONException;
+import org.codehaus.jettison.json.JSONObject;
+import org.foi.nwtis.majugurci.konfiguracije.Konfiguracija;
+import org.foi.nwtis.majugurci.konfiguracije.bp.BP_Konfiguracija;
+import org.foi.nwtis.majugurci.rest.klijenti.GMKlijent;
+import org.foi.nwtis.majugurci.rest.klijenti.OWMKlijent;
+import org.foi.nwtis.majugurci.socketServer.ServerObradaDretva;
+import org.foi.nwtis.majugurci.web.podaci.Lokacija;
+import org.foi.nwtis.majugurci.web.podaci.MeteoPodaci;
+import org.foi.nwtis.majugurci.web.podaci.MeteoPrognoza;
+import org.foi.nwtis.majugurci.web.podaci.MeteoPrognozaSati;
+import org.foi.nwtis.majugurci.web.podaci.MeteoStanice;
+
+/**
+ *
+ * @author Mario
+ */
+@WebService(serviceName = "MeteoPodaciWS")
+public class MeteoPodaciWS {
+
+    private BP_Konfiguracija konfigBP = null;
+    private Konfiguracija konfigRazno = null;
+
+    //podaci za spajanje na bazu podataka
+    private String server;
+    private String baza;
+    private String korisnik;
+    private String lozinka;
+    private String driver;
+
+    @Resource
+    private WebServiceContext context;
+
+    /**
+     * Metoda koja samo jednom preuzima konfiguracijske datoteke i sprema ih u
+     * globalne varijable
+     *
+     * Prouciti zasto ne mogu to napraviti u konstruktoru ili metodi s
+     *
+     * @postConstruct anotacijom
+     */
+    private void preuzmiKonfiguracije() {
+        if (konfigBP == null || konfigRazno == null) {
+            ServletContext servletContext
+                    = (ServletContext) context.getMessageContext().get(MessageContext.SERVLET_CONTEXT);
+
+            konfigBP = (BP_Konfiguracija) servletContext.getAttribute("konfigBP");
+            konfigRazno = (Konfiguracija) servletContext.getAttribute("konfigRazno");
+
+            server = konfigBP.getServer_database();
+            baza = server + konfigBP.getUser_database();
+            korisnik = konfigBP.getUser_username();
+            lozinka = konfigBP.getUser_password();
+            driver = konfigBP.getDriver_database(server);
+
+            try {
+                Class.forName(driver);
+            } catch (ClassNotFoundException ex) {
+                Logger.getLogger(ServerObradaDretva.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+    }
+
+    /**
+     * Web service operation Daje trenutno važeće meteo podatke za prosljeđenu
+     * adresu
+     *
+     * @param adresa naziv adrese
+     * @return objekt MeteoPodaci
+     */
+    @WebMethod(operationName = "dajTrenutneMeteoPodatkeZaAdresu")
+    public MeteoPodaci dajTrenutneMeteoPodatkeZaAdresu(@WebParam(name = "adresa") final String adresa) {
+        preuzmiKonfiguracije();
+
+         GMKlijent gmk = new GMKlijent();
+         Lokacija l = gmk.getGeoLocation(adresa);
+
+         OWMKlijent owmk = new OWMKlijent(konfigRazno.dajPostavku("openWeatherMap.key"));
+
+         MeteoPodaci mp = owmk.getRealTimeWeather(l.getLatitude(), l.getLongitude());
+
+         return mp;
+        
+        /*JSONObject obj = null;
+
+        try {
+            obj = new JSONObject();
+            obj.put("name", "foo");
+            obj.put("num", new Integer(100));
+            obj.put("balance", new Double(1000.21));
+            obj.put("is_vip", new Boolean(true));
+        } catch (JSONException ex) {
+            Logger.getLogger(MeteoPodaciWS.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
+        return obj.toString();*/
+
+    }
+
+    /**
+     * Web service operation Daje listu adresa koje je korisnik dodao
+     *
+     * @param korisnik korisnicko ime
+     * @return Lista adresa
+     */
+    @WebMethod(operationName = "dajAdreseKorisnika")
+    public List<String> dajAdreseKorisnika(@WebParam(name = "korisnik") final String korisnik) {
+        preuzmiKonfiguracije();
+
+        List<String> adrese = new ArrayList<>();
+
+        String sqlUpit = "SELECT a.adresa, k.korisnicko_ime "
+                + "FROM majugurci_adrese a JOIN majugurci_korisnici k "
+                + "ON a.korisnik = k.id_korisnik WHERE korisnicko_ime = ?";
+
+        try (Connection con = DriverManager.getConnection(this.baza, this.korisnik, this.lozinka);
+                PreparedStatement ps = con.prepareStatement(sqlUpit);) {
+
+            ps.setString(1, korisnik);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    adrese.add(rs.getString("adresa"));
+                }
+            }
+
+        } catch (SQLException ex) {
+            Logger.getLogger(ServerObradaDretva.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
+        return adrese;
+    }
+
+    /**
+     * Web service operation Daje n adresa za koje je prikupljeno najvise
+     * podataka i broj podataka
+     *
+     * @param brojAdresa
+     * @return
+     */
+    @WebMethod(operationName = "dajRangListu")
+    public List<String[]> dajRangListuAdresa(@WebParam(name = "brojAdresa") final int brojAdresa) {
+        preuzmiKonfiguracije();
+
+        List<String[]> adrese = new ArrayList<>();
+
+        String sqlUpit = "SELECT a.adresa, COUNT(*) as broj_ponavljanja "
+                + "FROM majugurci_meteo m JOIN majugurci_adrese a "
+                + "ON a.id_adresa = m.adresa GROUP BY adresa ORDER BY broj_ponavljanja DESC LIMIT ?;";
+
+        try (Connection con = DriverManager.getConnection(this.baza, this.korisnik, this.lozinka);
+                PreparedStatement ps = con.prepareStatement(sqlUpit);) {
+
+            ps.setInt(1, brojAdresa);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    String[] a = new String[2];
+                    a[0] = rs.getString("adresa");
+                    a[1] = rs.getString("broj_ponavljanja");
+                    adrese.add(a);
+                }
+            }
+
+        } catch (SQLException ex) {
+            Logger.getLogger(ServerObradaDretva.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
+        return adrese;
+    }
+
+    /**
+     * Web service operation Daje posljednjih n meteo podataka za izabranu
+     * adresu
+     *
+     * @param adresa naziv adrese
+     * @param brojZapisa N
+     * @return Lista meteo podataka
+     */
+    public List<MeteoPodaci> dajPosljednjihNMeteoPodataka(@WebParam(name = "adresa") final String adresa, @WebParam(name = "brojZapisa") final int brojZapisa) {
+        preuzmiKonfiguracije();
+
+        List<MeteoPodaci> meteo = new ArrayList<>();
+
+        String sqlUpit = "SELECT m.* from majugurci_meteo m JOIN majugurci_adrese a "
+                + "ON a.id_adresa = m.adresa WHERE a.adresa = ? "
+                + "ORDER BY id_meteo_podaci DESC LIMIT ?;";
+
+        try (Connection con = DriverManager.getConnection(this.baza, this.korisnik, this.lozinka);
+                PreparedStatement ps = con.prepareStatement(sqlUpit);) {
+
+            ps.setString(1, adresa);
+            ps.setInt(2, brojZapisa);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    MeteoPodaci mp = new MeteoPodaci();
+
+                    Timestamp datumSql = rs.getTimestamp("sunrise");
+                    java.util.Date datumJava = new java.util.Date(datumSql.getTime());
+                    mp.setSunRise(datumJava);
+
+                    datumSql = rs.getTimestamp("sunset");
+                    datumJava = new java.util.Date(datumSql.getTime());
+                    mp.setSunSet(datumJava);
+
+                    mp.setTemperatureValue(rs.getFloat("temperature_value"));
+                    mp.setTemperatureMin(rs.getFloat("temperature_min"));
+                    mp.setTemperatureMax(rs.getFloat("temperature_max"));
+                    mp.setTemperatureUnit(rs.getString("temperature_unit"));
+
+                    mp.setHumidityValue(rs.getFloat("humidity_value"));
+                    mp.setHumidityUnit(rs.getString("humidity_unit"));
+
+                    mp.setPressureValue(rs.getFloat("pressure_value"));
+                    mp.setPressureUnit(rs.getString("pressure_unit"));
+
+                    mp.setWindSpeedValue(rs.getFloat("wind_speed_value"));
+                    mp.setWindSpeedName(rs.getString("wind_speed_name"));
+                    mp.setWindDirectionValue(rs.getFloat("wind_direction_value"));
+                    mp.setWindDirectionCode(rs.getString("wind_direction_code"));
+                    mp.setWindDirectionName(rs.getString("wind_direction_name"));
+
+                    mp.setCloudsValue(rs.getInt("clouds_value"));
+                    mp.setCloudsName(rs.getString("clouds_name"));
+
+                    mp.setVisibility(rs.getString("visibility"));
+
+                    mp.setPrecipitationValue(rs.getFloat("precipitation_value"));
+                    mp.setPrecipitationMode(rs.getString("precipitation_mode"));
+                    mp.setPrecipitationUnit(rs.getString("precipitation_unit"));
+
+                    mp.setWeatherNumber(rs.getInt("weather_number"));
+                    mp.setWeatherValue(rs.getString("weather_value"));
+                    mp.setWeatherIcon(rs.getString("weather_icon"));
+
+                    datumSql = rs.getTimestamp("last_update");
+                    datumJava = new java.util.Date(datumSql.getTime());
+                    mp.setLastUpdate(datumJava);
+
+                    meteo.add(mp);
+                }
+            }
+
+        } catch (SQLException ex) {
+            Logger.getLogger(ServerObradaDretva.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
+        return meteo;
+    }
+
+    /**
+     * Web service operation Daje meteo podatke u vremenskom intervalu od-do
+     * datuma
+     *
+     * @param adresa naziv adrese
+     * @param datumOd početni datum
+     * @param datumDo krajnji datum
+     * @return Lista meteo podataka
+     */
+    @WebMethod(operationName = "dajMeteoPodatkeUDatumskomIntervalu")
+    public List<MeteoPodaci> dajMeteoPodatkeUDatumskomIntervalu(@WebParam(name = "adresa") final String adresa, @WebParam(name = "datumOd") String datumOd, @WebParam(name = "datumDo") String datumDo) {
+        preuzmiKonfiguracije();
+
+        List<MeteoPodaci> meteo = new ArrayList<>();
+
+        String sqlUpit = "SELECT m.* from majugurci_meteo m JOIN majugurci_adrese a "
+                + "ON a.id_adresa = m.adresa WHERE a.adresa = ? "
+                + "AND (vrijeme_spremanja BETWEEN ? AND ? '23:59:59:999') ORDER BY id_meteo_podaci DESC;";
+
+        try (Connection con = DriverManager.getConnection(this.baza, this.korisnik, this.lozinka);
+                PreparedStatement ps = con.prepareStatement(sqlUpit);) {
+
+            datumOd += " 00:00:00:000";
+            datumDo += " 23:59:59:999";
+
+            LocalDateTime odDatuma;
+            LocalDateTime doDatuma;
+
+            List<LocalDateTime> datumi = pretvoriStringUDatum(datumOd, datumDo);
+
+            if (datumi == null) {
+                return null;
+            } else {
+                odDatuma = datumi.get(0);
+                doDatuma = datumi.get(1);
+            }
+
+            ps.setString(1, adresa);
+            ps.setTimestamp(2, java.sql.Timestamp.valueOf(odDatuma));
+            ps.setTimestamp(3, java.sql.Timestamp.valueOf(doDatuma));
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    MeteoPodaci mp = new MeteoPodaci();
+
+                    Timestamp datumSql = rs.getTimestamp("sunrise");
+                    java.util.Date datumJava = new java.util.Date(datumSql.getTime());
+                    mp.setSunRise(datumJava);
+
+                    datumSql = rs.getTimestamp("sunset");
+                    datumJava = new java.util.Date(datumSql.getTime());
+                    mp.setSunSet(datumJava);
+
+                    mp.setTemperatureValue(rs.getFloat("temperature_value"));
+                    mp.setTemperatureMin(rs.getFloat("temperature_min"));
+                    mp.setTemperatureMax(rs.getFloat("temperature_max"));
+                    mp.setTemperatureUnit(rs.getString("temperature_unit"));
+
+                    mp.setHumidityValue(rs.getFloat("humidity_value"));
+                    mp.setHumidityUnit(rs.getString("humidity_unit"));
+
+                    mp.setPressureValue(rs.getFloat("pressure_value"));
+                    mp.setPressureUnit(rs.getString("pressure_unit"));
+
+                    mp.setWindSpeedValue(rs.getFloat("wind_speed_value"));
+                    mp.setWindSpeedName(rs.getString("wind_speed_name"));
+                    mp.setWindDirectionValue(rs.getFloat("wind_direction_value"));
+                    mp.setWindDirectionCode(rs.getString("wind_direction_code"));
+                    mp.setWindDirectionName(rs.getString("wind_direction_name"));
+
+                    mp.setCloudsValue(rs.getInt("clouds_value"));
+                    mp.setCloudsName(rs.getString("clouds_name"));
+
+                    mp.setVisibility(rs.getString("visibility"));
+
+                    mp.setPrecipitationValue(rs.getFloat("precipitation_value"));
+                    mp.setPrecipitationMode(rs.getString("precipitation_mode"));
+                    mp.setPrecipitationUnit(rs.getString("precipitation_unit"));
+
+                    mp.setWeatherNumber(rs.getInt("weather_number"));
+                    mp.setWeatherValue(rs.getString("weather_value"));
+                    mp.setWeatherIcon(rs.getString("weather_icon"));
+
+                    datumSql = rs.getTimestamp("last_update");
+                    datumJava = new java.util.Date(datumSql.getTime());
+                    mp.setLastUpdate(datumJava);
+
+                    meteo.add(mp);
+                }
+            }
+
+        } catch (SQLException ex) {
+            Logger.getLogger(ServerObradaDretva.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
+        return meteo;
+    }
+
+    /**
+     * Pomoćna metoda koja pretvara String u LocalDateTime Podržava više formata
+     * datuma
+     *
+     * @param datumOd početni datum
+     * @param datumDo krajnji datum
+     * @return Lista, prvi element je formatirani početni datum, drugi element
+     * je formatirani krajni datum
+     */
+    private List<LocalDateTime> pretvoriStringUDatum(String datumOd, String datumDo) {
+        LocalDateTime odDatuma = null;
+        LocalDateTime doDatuma = null;
+
+        List<LocalDateTime> datumi = new ArrayList<>();
+
+        boolean datumDobar;
+
+        try {
+            DateTimeFormatter dff = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss:SSS");
+            odDatuma = LocalDateTime.parse(datumOd, dff);
+            doDatuma = LocalDateTime.parse(datumDo, dff);
+            datumDobar = true;
+        } catch (Exception e) {
+            datumDobar = false;
+        }
+        if (!datumDobar) {
+            try {
+                DateTimeFormatter dff = DateTimeFormatter.ofPattern("d.MM.yyyy HH:mm:ss:SSS");
+                odDatuma = LocalDateTime.parse(datumOd, dff);
+                doDatuma = LocalDateTime.parse(datumDo, dff);
+                datumDobar = true;
+            } catch (Exception e) {
+                datumDobar = false;
+            }
+        }
+        if (!datumDobar) {
+            try {
+                DateTimeFormatter dff = DateTimeFormatter.ofPattern("dd.M.yyyy HH:mm:ss:SSS");
+                odDatuma = LocalDateTime.parse(datumOd, dff);
+                doDatuma = LocalDateTime.parse(datumDo, dff);
+                datumDobar = true;
+            } catch (Exception e) {
+                datumDobar = false;
+            }
+        }
+        if (!datumDobar) {
+            try {
+                DateTimeFormatter dff = DateTimeFormatter.ofPattern("d.M.yyyy HH:mm:ss:SSS");
+                odDatuma = LocalDateTime.parse(datumOd, dff);
+                doDatuma = LocalDateTime.parse(datumDo, dff);
+                datumDobar = true;
+            } catch (Exception e) {
+                datumDobar = false;
+            }
+        }
+        if (!datumDobar) {
+            try {
+                DateTimeFormatter dff = DateTimeFormatter.ofPattern("dd.MM.yyyy. HH:mm:ss:SSS");
+                odDatuma = LocalDateTime.parse(datumOd, dff);
+                doDatuma = LocalDateTime.parse(datumDo, dff);
+                datumDobar = true;
+            } catch (Exception e) {
+                datumDobar = false;
+            }
+        }
+        if (!datumDobar) {
+            try {
+                DateTimeFormatter dff = DateTimeFormatter.ofPattern("d.MM.yyyy. HH:mm:ss:SSS");
+                odDatuma = LocalDateTime.parse(datumOd, dff);
+                doDatuma = LocalDateTime.parse(datumDo, dff);
+                datumDobar = true;
+            } catch (Exception e) {
+                datumDobar = false;
+            }
+        }
+        if (!datumDobar) {
+            try {
+                DateTimeFormatter dff = DateTimeFormatter.ofPattern("dd.M.yyyy. HH:mm:ss:SSS");
+                odDatuma = LocalDateTime.parse(datumOd, dff);
+                doDatuma = LocalDateTime.parse(datumDo, dff);
+                datumDobar = true;
+            } catch (Exception e) {
+                datumDobar = false;
+            }
+        }
+        if (!datumDobar) {
+            try {
+                DateTimeFormatter dff = DateTimeFormatter.ofPattern("d.M.yyyy. HH:mm:ss:SSS");
+                odDatuma = LocalDateTime.parse(datumOd, dff);
+                doDatuma = LocalDateTime.parse(datumDo, dff);
+                datumDobar = true;
+            } catch (Exception e) {
+                datumDobar = false;
+            }
+        }
+        if (!datumDobar) {
+            try {
+                DateTimeFormatter dff = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss:SSS");
+                odDatuma = LocalDateTime.parse(datumOd, dff);
+                doDatuma = LocalDateTime.parse(datumDo, dff);
+                datumDobar = true;
+            } catch (Exception e) {
+                datumDobar = false;
+            }
+        }
+
+        if (!datumDobar) {
+            return null;
+        } else {
+            datumi.add(odDatuma);
+            datumi.add(doDatuma);
+            return datumi;
+        }
+    }
+
+    /**
+     * Web service operation Daje n najbližih meteo stanica za adresu
+     *
+     * @param adresa naziv adrese
+     * @param brojStanica
+     * @return Lista meteo stanica
+     */
+    @WebMethod(operationName = "dajVremenskeStaniceUBliziniAdrese")
+    public List<MeteoStanice> dajVremenskeStaniceUBliziniAdrese(@WebParam(name = "adresa") final String adresa, @WebParam(name = "brojStanica") final int brojStanica) {
+        preuzmiKonfiguracije();
+
+        List<MeteoStanice> meteoStanice = new ArrayList<>();
+
+        GMKlijent gmk = new GMKlijent();
+        Lokacija l = gmk.getGeoLocation(adresa);
+
+        OWMKlijent owmk = new OWMKlijent(konfigRazno.dajPostavku("openWeatherMap.key"));
+
+        MeteoStanice[] ms = owmk.getWeatherStations(adresa, l.getLatitude(), l.getLongitude(), brojStanica);
+
+        for (MeteoStanice m : ms) {
+            meteoStanice.add(m);
+        }
+
+        return meteoStanice;
+    }
+
+    /**
+     * Web service operation Daje vremensku prognozu za zadani broj sati
+     *
+     * @param adresa
+     * @param brojSati
+     * @return Listu meteo prognoze po satima
+     */
+    @WebMethod(operationName = "dajPrognozuZaBrojSati")
+    public List<MeteoPrognozaSati> dajPrognozuZaBrojSati(@WebParam(name = "adresa") final String adresa, @WebParam(name = "brojSati") final int brojSati) {
+        preuzmiKonfiguracije();
+
+        List<MeteoPrognozaSati> meteoPrognozaSati = new ArrayList<>();
+
+        GMKlijent gmk = new GMKlijent();
+        Lokacija l = gmk.getGeoLocation(adresa);
+
+        OWMKlijent owmk = new OWMKlijent(konfigRazno.dajPostavku("openWeatherMap.key"));
+
+        MeteoPrognozaSati[] mps = owmk.getWeatherDays(adresa, l.getLatitude(), l.getLongitude(), brojSati);
+
+        for (MeteoPrognozaSati m : mps) {
+            meteoPrognozaSati.add(m);
+        }
+
+        return meteoPrognozaSati;
+    }
+
+    /**
+     * Web service operation Daje vremensku prognozu za zadani broj dana
+     *
+     * @param adresa
+     * @param brojDana
+     * @return Lista meteo prognoze
+     */
+    @WebMethod(operationName = "dajPrognozuZaBrojDana")
+    public List<MeteoPrognoza> dajPrognozuZaBrojDana(@WebParam(name = "adresa") final String adresa, @WebParam(name = "brojDana") final int brojDana) {
+        preuzmiKonfiguracije();
+
+        List<MeteoPrognoza> meteoPrognoza = new ArrayList<>();
+
+        GMKlijent gmk = new GMKlijent();
+        Lokacija l = gmk.getGeoLocation(adresa);
+
+        OWMKlijent owmk = new OWMKlijent(konfigRazno.dajPostavku("openWeatherMap.key"));
+
+        MeteoPrognoza[] mp = owmk.getWeatherForecast(adresa, l.getLatitude(), l.getLongitude(), brojDana);
+
+        for (MeteoPrognoza m : mp) {
+            meteoPrognoza.add(m);
+        }
+
+        return meteoPrognoza;
+    }
+
+    /**
+     * Pomoćna metoda za autentikaciju korisnika
+     *
+     * @param korisnik
+     * @param lozinka
+     * @return true uspjesno, inace false
+     */
+    private boolean autenticirajKorisnika(String korisnik, String lozinka) {
+        String sqlUpit = "SELECT korisnicko_ime FROM majugurci_korisnici "
+                + "WHERE korisnicko_ime= ? AND lozinka= ?";
+
+        try (Connection con = DriverManager.getConnection(this.baza, this.korisnik, this.lozinka);
+                PreparedStatement ps = con.prepareStatement(sqlUpit);) {
+
+            ps.setString(1, korisnik);
+            ps.setString(2, lozinka);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+
+        } catch (SQLException ex) {
+            Logger.getLogger(ServerObradaDretva.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
+        return false;
+    }
+
+}

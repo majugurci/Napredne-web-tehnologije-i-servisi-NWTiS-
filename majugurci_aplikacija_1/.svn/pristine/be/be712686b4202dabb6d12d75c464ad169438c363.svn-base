@@ -1,0 +1,3 @@
+select k.korisnicko_ime, k.lozinka from majugurci_korisnici k 
+JOIN majugurci_grupe g ON k.grupa = g.id_grupa
+WHERE g.opis='admin';

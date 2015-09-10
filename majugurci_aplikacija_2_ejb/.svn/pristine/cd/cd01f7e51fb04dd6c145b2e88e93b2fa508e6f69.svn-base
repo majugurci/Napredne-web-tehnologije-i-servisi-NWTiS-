@@ -1,0 +1,224 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package org.foi.nwtis.majugurci.ejb.eb;
+
+import java.io.Serializable;
+import java.math.BigDecimal;
+import java.util.Date;
+import java.util.List;
+import javax.persistence.Basic;
+import javax.persistence.CascadeType;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
+import javax.persistence.NamedQueries;
+import javax.persistence.NamedQuery;
+import javax.persistence.OneToMany;
+import javax.persistence.Table;
+import javax.persistence.Temporal;
+import javax.persistence.TemporalType;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
+import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlTransient;
+
+/**
+ *
+ * @author Mario
+ */
+@Entity
+@Table(name = "MAJUGURCI_KORISNICI")
+@XmlRootElement
+@NamedQueries({
+    @NamedQuery(name = "MajugurciKorisnici.findAll", query = "SELECT m FROM MajugurciKorisnici m"),
+    @NamedQuery(name = "MajugurciKorisnici.findByIdKorisnik", query = "SELECT m FROM MajugurciKorisnici m WHERE m.idKorisnik = :idKorisnik"),
+    @NamedQuery(name = "MajugurciKorisnici.findByKorisnickoIme", query = "SELECT m FROM MajugurciKorisnici m WHERE m.korisnickoIme = :korisnickoIme"),
+    @NamedQuery(name = "MajugurciKorisnici.findByLozinka", query = "SELECT m FROM MajugurciKorisnici m WHERE m.lozinka = :lozinka"),
+    @NamedQuery(name = "MajugurciKorisnici.findByIme", query = "SELECT m FROM MajugurciKorisnici m WHERE m.ime = :ime"),
+    @NamedQuery(name = "MajugurciKorisnici.findByPrezime", query = "SELECT m FROM MajugurciKorisnici m WHERE m.prezime = :prezime"),
+    @NamedQuery(name = "MajugurciKorisnici.findByEmail", query = "SELECT m FROM MajugurciKorisnici m WHERE m.email = :email"),
+    @NamedQuery(name = "MajugurciKorisnici.findBySredstva", query = "SELECT m FROM MajugurciKorisnici m WHERE m.sredstva = :sredstva"),
+    @NamedQuery(name = "MajugurciKorisnici.findByVrijemeRegistracije", query = "SELECT m FROM MajugurciKorisnici m WHERE m.vrijemeRegistracije = :vrijemeRegistracije"),
+    @NamedQuery(name = "MajugurciKorisnici.findByPrvaPrijava", query = "SELECT m FROM MajugurciKorisnici m WHERE m.prvaPrijava = :prvaPrijava")})
+public class MajugurciKorisnici implements Serializable {
+    private static final long serialVersionUID = 1L;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Basic(optional = false)
+    @Column(name = "ID_KORISNIK")
+    private Integer idKorisnik;
+    @Basic(optional = false)
+    @NotNull
+    @Size(min = 1, max = 128)
+    @Column(name = "KORISNICKO_IME")
+    private String korisnickoIme;
+    @Basic(optional = false)
+    @NotNull
+    @Size(min = 1, max = 128)
+    @Column(name = "LOZINKA")
+    private String lozinka;
+    @Size(max = 30)
+    @Column(name = "IME")
+    private String ime;
+    @Size(max = 50)
+    @Column(name = "PREZIME")
+    private String prezime;
+    // @Pattern(regexp="[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?", message="Invalid email")//if the field contains email address consider using this annotation to enforce field validation
+    @Size(max = 256)
+    @Column(name = "EMAIL")
+    private String email;
+    // @Max(value=?)  @Min(value=?)//if you know range of your decimal fields consider using these annotations to enforce field validation
+    @Column(name = "SREDSTVA")
+    private BigDecimal sredstva;
+    @Basic(optional = false)
+    @NotNull
+    @Column(name = "VRIJEME_REGISTRACIJE")
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date vrijemeRegistracije;
+    @Basic(optional = false)
+    @NotNull
+    @Column(name = "PRVA_PRIJAVA")
+    private int prvaPrijava;
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "korisnik")
+    private List<MajugurciDnevnik> majugurciDnevnikList;
+    @JoinColumn(name = "GRUPA", referencedColumnName = "ID_GRUPA")
+    @ManyToOne(optional = false)
+    private MajugurciGrupe grupa;
+
+    public MajugurciKorisnici() {
+    }
+
+    public MajugurciKorisnici(Integer idKorisnik) {
+        this.idKorisnik = idKorisnik;
+    }
+
+    public MajugurciKorisnici(Integer idKorisnik, String korisnickoIme, String lozinka, Date vrijemeRegistracije, int prvaPrijava) {
+        this.idKorisnik = idKorisnik;
+        this.korisnickoIme = korisnickoIme;
+        this.lozinka = lozinka;
+        this.vrijemeRegistracije = vrijemeRegistracije;
+        this.prvaPrijava = prvaPrijava;
+    }
+
+    public Integer getIdKorisnik() {
+        return idKorisnik;
+    }
+
+    public void setIdKorisnik(Integer idKorisnik) {
+        this.idKorisnik = idKorisnik;
+    }
+
+    public String getKorisnickoIme() {
+        return korisnickoIme;
+    }
+
+    public void setKorisnickoIme(String korisnickoIme) {
+        this.korisnickoIme = korisnickoIme;
+    }
+
+    public String getLozinka() {
+        return lozinka;
+    }
+
+    public void setLozinka(String lozinka) {
+        this.lozinka = lozinka;
+    }
+
+    public String getIme() {
+        return ime;
+    }
+
+    public void setIme(String ime) {
+        this.ime = ime;
+    }
+
+    public String getPrezime() {
+        return prezime;
+    }
+
+    public void setPrezime(String prezime) {
+        this.prezime = prezime;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public BigDecimal getSredstva() {
+        return sredstva;
+    }
+
+    public void setSredstva(BigDecimal sredstva) {
+        this.sredstva = sredstva;
+    }
+
+    public Date getVrijemeRegistracije() {
+        return vrijemeRegistracije;
+    }
+
+    public void setVrijemeRegistracije(Date vrijemeRegistracije) {
+        this.vrijemeRegistracije = vrijemeRegistracije;
+    }
+
+    public int getPrvaPrijava() {
+        return prvaPrijava;
+    }
+
+    public void setPrvaPrijava(int prvaPrijava) {
+        this.prvaPrijava = prvaPrijava;
+    }
+
+    @XmlTransient
+    public List<MajugurciDnevnik> getMajugurciDnevnikList() {
+        return majugurciDnevnikList;
+    }
+
+    public void setMajugurciDnevnikList(List<MajugurciDnevnik> majugurciDnevnikList) {
+        this.majugurciDnevnikList = majugurciDnevnikList;
+    }
+
+    public MajugurciGrupe getGrupa() {
+        return grupa;
+    }
+
+    public void setGrupa(MajugurciGrupe grupa) {
+        this.grupa = grupa;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 0;
+        hash += (idKorisnik != null ? idKorisnik.hashCode() : 0);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object object) {
+        // TODO: Warning - this method won't work in the case the id fields are not set
+        if (!(object instanceof MajugurciKorisnici)) {
+            return false;
+        }
+        MajugurciKorisnici other = (MajugurciKorisnici) object;
+        if ((this.idKorisnik == null && other.idKorisnik != null) || (this.idKorisnik != null && !this.idKorisnik.equals(other.idKorisnik))) {
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public String toString() {
+        return "org.foi.nwtis.majugurci.ejb.eb.MajugurciKorisnici[ idKorisnik=" + idKorisnik + " ]";
+    }
+    
+}

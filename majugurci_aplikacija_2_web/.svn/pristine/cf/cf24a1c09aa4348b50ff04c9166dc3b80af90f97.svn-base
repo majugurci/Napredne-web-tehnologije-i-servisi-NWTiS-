@@ -1,0 +1,38 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package org.foi.nwtis.majugurci.web.zrna;
+
+import javax.ejb.Stateful;
+import org.foi.nwtis.majugurci.web.podaci.Korisnik;
+
+/**
+ *
+ * @author Mario
+ */
+@Stateful
+public class KorisnikInfo {
+
+    private Korisnik korisnik;
+
+    public KorisnikInfo() {
+    }
+
+    public KorisnikInfo(Korisnik korisnik) {
+        this.korisnik = korisnik;
+    }
+
+    public Korisnik getKorisnik() {
+        return korisnik;
+    }
+
+    public void setKorisnik(Korisnik korisnik) {
+        this.korisnik = korisnik;
+    }
+    
+    
+    
+    
+}

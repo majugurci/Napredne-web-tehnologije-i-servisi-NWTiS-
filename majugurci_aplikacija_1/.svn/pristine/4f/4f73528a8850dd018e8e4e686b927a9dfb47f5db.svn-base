@@ -1,0 +1,39 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package org.foi.nwtis.majugurci.socketServer;
+
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
+import java.util.Locale;
+import org.foi.nwtis.majugurci.rest.klijenti.GMKlijent;
+import org.foi.nwtis.majugurci.rest.klijenti.OWMKlijent;
+import org.foi.nwtis.majugurci.web.podaci.Lokacija;
+import org.foi.nwtis.majugurci.web.podaci.MeteoPodaci;
+import org.foi.nwtis.majugurci.web.podaci.MeteoStanice;
+
+/**
+ *
+ * @author Mario
+ */
+public class TESTopcenito {
+
+    /**
+     * @param args the command line arguments
+     */
+    public static void main(String[] args) {
+        
+        String adresa = "Varaždin, Pavlinska 2";
+
+        GMKlijent gmk = new GMKlijent();
+        Lokacija l = gmk.getGeoLocation(adresa);
+
+        OWMKlijent owmk = new OWMKlijent("323232");
+
+        owmk.getWeatherDays(adresa, l.getLatitude(), l.getLongitude(), 5);
+        
+    }
+
+}

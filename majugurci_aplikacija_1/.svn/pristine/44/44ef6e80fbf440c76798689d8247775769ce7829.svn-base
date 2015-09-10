@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
+<properties>
+<comment>NWTIS konfiguracija</comment>
+<entry key="trenutniMeteoPodaci">10</entry>
+<entry key="adreseKorisnika">5</entry>
+<entry key="rangLista">5</entry>
+<entry key="posljednjihNMeteoPodataka">5</entry>
+<entry key="meteoPodaciUDatumskomIntervalu">5</entry>
+<entry key="meteoStanice">10</entry>
+<entry key="meteoPrognozaSati">15</entry>
+<entry key="meteoPrognoza">15</entry>
+<entry key="addAdresa">10</entry>
+<entry key="testAdresa">5</entry>
+<entry key="getAdresa">10</entry>
+</properties>

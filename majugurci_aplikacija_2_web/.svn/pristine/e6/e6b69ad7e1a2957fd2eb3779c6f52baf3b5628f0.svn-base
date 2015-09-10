@@ -1,0 +1,414 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package org.foi.nwtis.majugurci.web.zrna;
+
+import java.io.IOException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.annotation.PostConstruct;
+import javax.faces.application.FacesMessage;
+import javax.faces.bean.ManagedBean;
+import javax.faces.bean.ViewScoped;
+import javax.faces.component.UIComponent;
+import javax.faces.context.FacesContext;
+import javax.faces.validator.ValidatorException;
+import javax.servlet.http.HttpSession;
+import net.java.dev.jaxb.array.StringArray;
+import org.foi.nwtis.majugurci.web.podaci.Korisnik;
+import org.foi.nwtis.majugurci.ws.klijenti.MeteoPodaciWSKlijent;
+import org.foi.nwtis.majugurci.ws.serveri.AdreseKorisnikaOmotac;
+import org.foi.nwtis.majugurci.ws.serveri.MeteoPodaci;
+import org.foi.nwtis.majugurci.ws.serveri.MeteoPodaciListOmotac;
+import org.foi.nwtis.majugurci.ws.serveri.MeteoPodaciOmotac;
+import org.foi.nwtis.majugurci.ws.serveri.RangListaOmotac;
+
+/**
+ *
+ * @author Mario
+ */
+@ManagedBean
+@ViewScoped
+public class PregledAdresaMeteo {
+
+    private boolean pregledAdresa = false;
+    private List<String> sveAdrese = new ArrayList<>();
+
+    private boolean pregledAdresaKorisnika = false;
+    private List<String> sveAdreseKorisnika = new ArrayList<>();
+
+    private boolean pregledTrenutniMeteoPodaci = false;
+    private MeteoPodaci trenutniMeteoPodaci = new MeteoPodaci();
+    private String adresaZaTrenutneMeteoPodatke;
+
+    private boolean pregledRangListeAdresa = false;
+    private List<StringArray> rangListaAdresa = new ArrayList<>();
+    private int brojAdresaZaRangListu;
+    
+    private boolean pregledMeteoPodatakaInterval = false;
+    List<MeteoPodaci> meteoPodaciInterval = new ArrayList<>();
+    private String adresaMPInterval;
+    private Date pocetniDatum;
+    private Date zavrsniDatum;
+
+    private String korisnickoIme;
+    private String lozinka;
+
+    /**
+     * Creates a new instance of PregledAdresaMeteo
+     */
+    public PregledAdresaMeteo() {
+    }
+
+    @PostConstruct
+    public void init() {
+        FacesContext context = FacesContext.getCurrentInstance();
+        HttpSession session = (HttpSession) context.getExternalContext().getSession(true);
+        Korisnik k = (Korisnik) session.getAttribute("korisnik");
+        if (k == null) {
+            try {
+                FacesContext.getCurrentInstance().getExternalContext().redirect("login.xhtml");
+            } catch (IOException ex) {
+                Logger.getLogger(LoginObrada.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        } else {
+            korisnickoIme = k.getKorisnickoIme();
+            lozinka = k.getLozinka();
+        }
+    }
+
+    public boolean isPregledAdresa() {
+        return pregledAdresa;
+    }
+
+    public void setPregledAdresa(boolean pregledAdresa) {
+        this.pregledAdresa = pregledAdresa;
+    }
+
+    public List<String> getSveAdrese() {
+        return sveAdrese;
+    }
+
+    public void setSveAdrese(List<String> sveAdrese) {
+        this.sveAdrese = sveAdrese;
+    }
+
+    public String getKorisnickoIme() {
+        return korisnickoIme;
+    }
+
+    public boolean isPregledAdresaKorisnika() {
+        return pregledAdresaKorisnika;
+    }
+
+    public void setPregledAdresaKorisnika(boolean pregledAdresaKorisnika) {
+        this.pregledAdresaKorisnika = pregledAdresaKorisnika;
+    }
+
+    public List<String> getSveAdreseKorisnika() {
+        return sveAdreseKorisnika;
+    }
+
+    public void setSveAdreseKorisnika(List<String> sveAdreseKorisnika) {
+        this.sveAdreseKorisnika = sveAdreseKorisnika;
+    }
+
+    public boolean isPregledTrenutniMeteoPodaci() {
+        return pregledTrenutniMeteoPodaci;
+    }
+
+    public void setPregledTrenutniMeteoPodaci(boolean pregledTrenutniMeteoPodaci) {
+        this.pregledTrenutniMeteoPodaci = pregledTrenutniMeteoPodaci;
+    }
+
+    public MeteoPodaci getTrenutniMeteoPodaci() {
+        return trenutniMeteoPodaci;
+    }
+
+    public void setTrenutniMeteoPodaci(MeteoPodaci trenutniMeteoPodaci) {
+        this.trenutniMeteoPodaci = trenutniMeteoPodaci;
+    }
+
+    public String getAdresaZaTrenutneMeteoPodatke() {
+        return adresaZaTrenutneMeteoPodatke;
+    }
+
+    public void setAdresaZaTrenutneMeteoPodatke(String adresaZaTrenutneMeteoPodatke) {
+        this.adresaZaTrenutneMeteoPodatke = adresaZaTrenutneMeteoPodatke;
+    }
+
+    public boolean isPregledRangListeAdresa() {
+        return pregledRangListeAdresa;
+    }
+
+    public void setPregledRangListeAdresa(boolean pregledRangListeAdresa) {
+        this.pregledRangListeAdresa = pregledRangListeAdresa;
+    }
+
+    public List<StringArray> getRangListaAdresa() {
+        return rangListaAdresa;
+    }
+
+    public void setRangListaAdresa(List<StringArray> rangListaAdresa) {
+        this.rangListaAdresa = rangListaAdresa;
+    }
+
+    public int getBrojAdresaZaRangListu() {
+        return brojAdresaZaRangListu;
+    }
+
+    public void setBrojAdresaZaRangListu(int brojAdresaZaRangListu) {
+        this.brojAdresaZaRangListu = brojAdresaZaRangListu;
+    }
+
+    public boolean isPregledMeteoPodatakaInterval() {
+        return pregledMeteoPodatakaInterval;
+    }
+
+    public void setPregledMeteoPodatakaInterval(boolean pregledMeteoPodatakaInterval) {
+        this.pregledMeteoPodatakaInterval = pregledMeteoPodatakaInterval;
+    }
+
+    public List<MeteoPodaci> getMeteoPodaciInterval() {
+        return meteoPodaciInterval;
+    }
+
+    public void setMeteoPodaciInterval(List<MeteoPodaci> meteoPodaciInterval) {
+        this.meteoPodaciInterval = meteoPodaciInterval;
+    }
+
+    public String getAdresaMPInterval() {
+        return adresaMPInterval;
+    }
+
+    public void setAdresaMPInterval(String adresaMPInterval) {
+        this.adresaMPInterval = adresaMPInterval;
+    }
+
+    public Date getPocetniDatum() {
+        return pocetniDatum;
+    }
+
+    public void setPocetniDatum(Date pocetniDatum) {
+        this.pocetniDatum = pocetniDatum;
+    }
+
+    public Date getZavrsniDatum() {
+        return zavrsniDatum;
+    }
+
+    public void setZavrsniDatum(Date zavrsniDatum) {
+        this.zavrsniDatum = zavrsniDatum;
+    }
+    
+    
+
+    /**
+     * Poziva SOAP servis i dohvaća sve adrese za koje se prikupljaju meteo
+     * podaci
+     */
+    public void dajPregledSvihAdresa() {
+
+        AdreseKorisnikaOmotac ako = MeteoPodaciWSKlijent.dajSveAdrese(korisnickoIme, lozinka);
+
+        if (ako.getPoruka() != null) {
+            //dogodila se greska u pozivu i nema podataka
+            FacesContext fc = FacesContext.getCurrentInstance();
+            fc.addMessage("forma:zaGreskuSveAdrese", new FacesMessage(ako.getPoruka()));
+            pregledAdresa = false;
+        } else {
+            sveAdrese = ako.getAdrese();
+            pregledAdresa = true;
+        }
+
+    }
+
+    /**
+     * Pomoćna metoda koja zatvara pregled svih adresa
+     */
+    public void zatvoriPregledSvihAdresa() {
+        pregledAdresa = false;
+        sveAdrese.clear();
+    }
+
+    /**
+     * Poziva SOAP servis i dohvaća sve adrese koje je korisnik dodao i za koje
+     * se prikupljaju meteo podaci
+     */
+    public void dajPregledSvihAdresaKorisnika() {
+
+        AdreseKorisnikaOmotac ako = MeteoPodaciWSKlijent.dajAdreseKorisnika(korisnickoIme, lozinka);
+
+        if (ako.getPoruka() != null) {
+            //dogodila se greska u pozivu i nema podataka
+            FacesContext fc = FacesContext.getCurrentInstance();
+            fc.addMessage("forma:zaGreskuSveAdreseKorisnika", new FacesMessage(ako.getPoruka()));
+            pregledAdresaKorisnika = false;
+        } else {
+            sveAdreseKorisnika = ako.getAdrese();
+            pregledAdresaKorisnika = true;
+        }
+
+    }
+
+    /**
+     * Pomoćna metoda koja zatvara pregled svih adresa koje je korisnik dodao a
+     * za koje se prikupljaju meteo podaci
+     */
+    public void zatvoriPregledSvihAdresaKorisnika() {
+        pregledAdresaKorisnika = false;
+        sveAdreseKorisnika.clear();
+    }
+
+    /**
+     * Poziva SOAP servis i dohvaća sve adrese koje je korisnik dodao i za koje
+     * se prikupljaju meteo podaci
+     */
+    public void dajPregledTrenutnihMeteoPodataka() {
+
+        MeteoPodaciOmotac mpo = MeteoPodaciWSKlijent.dajTrenutneMeteoPodatkeZaAdresu(adresaZaTrenutneMeteoPodatke, korisnickoIme, lozinka);
+
+        if (mpo.getPoruka() != null) {
+            //dogodila se greska u pozivu i nema podataka
+            FacesContext fc = FacesContext.getCurrentInstance();
+            fc.addMessage("forma:zaGreskuTrenutniMeteoPodaci", new FacesMessage(mpo.getPoruka()));
+            pregledTrenutniMeteoPodaci = false;
+        } else {
+            trenutniMeteoPodaci = mpo.getMeteoPodaci();
+            pregledTrenutniMeteoPodaci = true;
+        }
+
+    }
+
+    /**
+     * Pomoćna metoda koja zatvara pregled trenutnih meteo podataka za adresu
+     */
+    public void zatvoriPregledTrenutnihMeteoPodataka() {
+        pregledTrenutniMeteoPodaci = false;
+        trenutniMeteoPodaci = new MeteoPodaci();
+    }
+
+    /**
+     * Poziva SOAP servis i dohvaća rang listu adresa za koje je prikupljeno
+     * najviše meteo podataka
+     */
+    public void dajPregledRangListeAdresa() {
+
+        RangListaOmotac rlo = MeteoPodaciWSKlijent.dajRangListu(brojAdresaZaRangListu, korisnickoIme, lozinka);
+
+        if (rlo.getPoruka() != null) {
+            //dogodila se greska u pozivu i nema podataka
+            FacesContext fc = FacesContext.getCurrentInstance();
+            fc.addMessage("forma:zaGreskuRangListaAdresa", new FacesMessage(rlo.getPoruka()));
+            pregledRangListeAdresa = false;
+        } else {
+            rangListaAdresa = rlo.getAdrese();
+            pregledRangListeAdresa = true;
+        }
+
+    }
+
+    /**
+     * Pomoćna metoda koja zatvara pregled trenutnih meteo podataka za adresu
+     */
+    public void zatvoriPregledRangListeAdresa() {
+        pregledRangListeAdresa = false;
+        rangListaAdresa.clear();
+    }
+
+    /**
+     * Metoda koja javlja pogrešku ako se ne unese broj elemenata rang liste,
+     * odnosno ako je taj broj manji od 1
+     *
+     *
+     * @param facesContext
+     * @param arg1
+     * @param value
+     * @throws ValidatorException
+     */
+    public void validatorBrojDana(FacesContext facesContext, UIComponent arg1, Object value) throws ValidatorException {
+        long pocetak = System.currentTimeMillis();
+
+        int vrijednost = 0;
+        boolean nijeBroj = false;
+
+        if (value instanceof Integer) {
+            vrijednost = (int) value;
+        } else {
+            nijeBroj = true;
+        }
+
+        Map<String, String> params = FacesContext.getCurrentInstance()
+                .getExternalContext().getRequestParameterMap();
+
+        String nazivGumba = params.get("odabraniGumb");
+
+        FacesMessage message = new FacesMessage();
+        message.setSeverity(FacesMessage.SEVERITY_ERROR);
+
+        if (nazivGumba == null) {
+            //System.out.println("Ovaj dio se ne izvrsava");
+        } else if (nazivGumba.equals("Dohvati rang listu")) {
+            if (value == null) {
+                //ako korisnicki odabir adrese nije inicijaliziran
+                message.setSummary(" Morate unijeti broj elemenata");
+                message.setDetail(" Morate unijeti broj elemenata");
+                facesContext.addMessage("brojElemenata", message);
+
+                throw new ValidatorException(message);
+            } else if (nijeBroj) {
+                message.setSummary(" Unesite cjelobrojnu vrijednost");
+                message.setDetail(" Unesite cjelobrojnu vrijednost");
+                facesContext.addMessage("brojElemenata", message);
+                throw new ValidatorException(message);
+            } else if (vrijednost < 1) {
+                message.setSummary(" Unesite broj veći od 0");
+                message.setDetail(" Unesite broj veći od 0");
+                facesContext.addMessage("brojElemenata", message);
+                throw new ValidatorException(message);
+            }
+        }
+    }
+    
+    
+    /**
+     * Poziva SOAP servis i meteo podatke za adresu u vremenskom intervalu
+     */
+    public void dajPregledMPInterval() {
+        DateFormat df = new SimpleDateFormat("dd.MM.yyyy");
+        
+        String pocetniDatum = df.format(this.pocetniDatum);
+        String zavrsniDatum = df.format(this.zavrsniDatum);
+
+        MeteoPodaciListOmotac mplo = MeteoPodaciWSKlijent.dajMeteoPodatkeUDatumskomIntervalu(adresaMPInterval, 
+                pocetniDatum, zavrsniDatum, korisnickoIme, lozinka);
+
+        if (mplo.getPoruka() != null) {
+            //dogodila se greska u pozivu i nema podataka
+            FacesContext fc = FacesContext.getCurrentInstance();
+            fc.addMessage("forma:zaGreskuMeteoPodaciUIntervalu", new FacesMessage(mplo.getPoruka()));
+            pregledMeteoPodatakaInterval = false;
+        } else {
+            meteoPodaciInterval = mplo.getMeteoPodaci();
+            pregledMeteoPodatakaInterval = true;
+        }
+
+    }
+
+    /**
+     * Pomoćna metoda koja zatvara pregled meteo podataka za adresu i 
+     * vremenskom intervalu
+     */
+    public void zatvoriPregledMPUIntervalu() {
+        pregledMeteoPodatakaInterval = false;
+        meteoPodaciInterval.clear();
+    }
+}

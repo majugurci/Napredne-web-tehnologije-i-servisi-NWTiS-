@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <style type="text/css">
+            html, body, #map-canvas { height: 100%; margin: 0; padding: 0;}
+        </style>
+        <script type="text/javascript"
+                src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDuCb4jyv6qc41dgBI3kK0zdIuW1mfyGgE">
+        </script>
+        <script type="text/javascript">
+            function initialize() {
+                var allcookies = document.cookie;
+                cookiearray = allcookies.split(';');
+                var jsonAdrese;
+                for (var i = 0; i < cookiearray.length; i++) {
+                    name = cookiearray[i].split('=')[0];
+                    value = cookiearray[i].split('=')[1];
+                    if (name === 'adreseCookie') {
+                        jsonAdrese = value;
+                    }
+                }
+
+                var adrese = JSON.parse(jsonAdrese);
+                
+                geocoder = new google.maps.Geocoder();
+
+                locations = new Array();
+                
+                var infowindow = new google.maps.InfoWindow();
+
+                for (i = 0; i < adrese.length; i++) {
+                    geocoder.geocode({'address': adrese[i]}, function (results, status) {
+                        if (status == google.maps.GeocoderStatus.OK) {
+                            var marker = new google.maps.Marker({
+                                map: map,
+                                position: results[0].geometry.location
+                            });
+
+                            var content = "<p><b>Puni naziv adrese:</b> " + results[0].formatted_address +
+                                    "<br/><b>Latitude:</b> " + results[0].geometry.location.lat() +
+                                    "<br/><b>Longitude:</b> " + results[0].geometry.location.lng() + "</p>";
+
+                            google.maps.event.addListener(marker, 'click', (function (marker, i) {
+                                return function () {
+                                    infowindow.setContent(content);
+                                    infowindow.open(map, marker);
+                                }
+                            }
+                            )(marker, i));
+                        } else {
+                            //nije vratio adresu
+                        }
+                    });
+                }
+
+                var mapOptions = {
+                    center: {lat: 46.307831, lng: 16.338246},
+                    zoom: 4
+                };
+                var map = new google.maps.Map(document.getElementById('map-canvas'),
+                        mapOptions);
+            }
+            google.maps.event.addDomListener(window, 'load', initialize);
+
+
+        </script>
+    </head>
+    <body>
+        <div id="map-canvas"></div>
+    </body>
+</html>

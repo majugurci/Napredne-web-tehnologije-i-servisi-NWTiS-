@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?> 
+ <definitions 
+ xmlns="http://schemas.xmlsoap.org/wsdl/" 
+ xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" 
+ xmlns:xsd="http://www.w3.org/2001/XMLSchema" 
+ xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" name="MeteoPodaciWS" targetNamespace="http://serveri.ws.majugurci.nwtis.foi.org/" xmlns:tns="http://serveri.ws.majugurci.nwtis.foi.org/" xmlns:wsp="http://www.w3.org/ns/ws-policy" xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd" xmlns:wsam="http://www.w3.org/2007/05/addressing/metadata" xmlns:sp="http://docs.oasis-open.org/ws-sx/ws-securitypolicy/200702" xmlns:sc="http://schemas.sun.com/2006/03/wss/server" xmlns:wspp="http://java.sun.com/xml/ns/wsit/policy" xmlns:fi="http://java.sun.com/xml/ns/wsit/2006/09/policy/fastinfoset/service" xmlns:tcp="http://java.sun.com/xml/ns/wsit/2006/09/policy/soaptcp/service" 
+ >
+    <message name="dajTrenutneMeteoPodatkeZaAdresu"/>
+    <message name="dajTrenutneMeteoPodatkeZaAdresuResponse"/>
+    <message name="dajSveAdrese"/>
+    <message name="dajSveAdreseResponse"/>
+    <message name="dajAdreseKorisnika"/>
+    <message name="dajAdreseKorisnikaResponse"/>
+    <message name="dajRangListu"/>
+    <message name="dajRangListuResponse"/>
+    <message name="dajPosljednjihNMeteoPodataka"/>
+    <message name="dajPosljednjihNMeteoPodatakaResponse"/>
+    <message name="dajMeteoPodatkeUDatumskomIntervalu"/>
+    <message name="dajMeteoPodatkeUDatumskomIntervaluResponse"/>
+    <message name="dajVremenskeStaniceUBliziniAdrese"/>
+    <message name="dajVremenskeStaniceUBliziniAdreseResponse"/>
+    <message name="dajPrognozuZaBrojSati"/>
+    <message name="dajPrognozuZaBrojSatiResponse"/>
+    <message name="dajPrognozuZaBrojDana"/>
+    <message name="dajPrognozuZaBrojDanaResponse"/>
+    <portType name="MeteoPodaciWS">
+        <operation name="dajTrenutneMeteoPodatkeZaAdresu">
+            <input message="tns:dajTrenutneMeteoPodatkeZaAdresu"/>
+            <output message="tns:dajTrenutneMeteoPodatkeZaAdresuResponse"/>
+        </operation>
+        <operation name="dajSveAdrese">
+            <input message="tns:dajSveAdrese"/>
+            <output message="tns:dajSveAdreseResponse"/>
+        </operation>
+        <operation name="dajAdreseKorisnika">
+            <input message="tns:dajAdreseKorisnika"/>
+            <output message="tns:dajAdreseKorisnikaResponse"/>
+        </operation>
+        <operation name="dajRangListu">
+            <input message="tns:dajRangListu"/>
+            <output message="tns:dajRangListuResponse"/>
+        </operation>
+        <operation name="dajPosljednjihNMeteoPodataka">
+            <input message="tns:dajPosljednjihNMeteoPodataka"/>
+            <output message="tns:dajPosljednjihNMeteoPodatakaResponse"/>
+        </operation>
+        <operation name="dajMeteoPodatkeUDatumskomIntervalu">
+            <input message="tns:dajMeteoPodatkeUDatumskomIntervalu"/>
+            <output message="tns:dajMeteoPodatkeUDatumskomIntervaluResponse"/>
+        </operation>
+        <operation name="dajVremenskeStaniceUBliziniAdrese">
+            <input message="tns:dajVremenskeStaniceUBliziniAdrese"/>
+            <output message="tns:dajVremenskeStaniceUBliziniAdreseResponse"/>
+        </operation>
+        <operation name="dajPrognozuZaBrojSati">
+            <input message="tns:dajPrognozuZaBrojSati"/>
+            <output message="tns:dajPrognozuZaBrojSatiResponse"/>
+        </operation>
+        <operation name="dajPrognozuZaBrojDana">
+            <input message="tns:dajPrognozuZaBrojDana"/>
+            <output message="tns:dajPrognozuZaBrojDanaResponse"/>
+        </operation>
+    </portType>
+    <binding name="MeteoPodaciWSPortBinding" type="tns:MeteoPodaciWS">
+        <wsp:PolicyReference URI="#MeteoPodaciWSPortBindingPolicy"/>
+        <operation name="dajTrenutneMeteoPodatkeZaAdresu">
+            <input></input>
+            <output></output>
+        </operation>
+        <operation name="dajSveAdrese">
+            <input></input>
+            <output></output>
+        </operation>
+        <operation name="dajAdreseKorisnika">
+            <input></input>
+            <output></output>
+        </operation>
+        <operation name="dajRangListu">
+            <input></input>
+            <output></output>
+        </operation>
+        <operation name="dajPosljednjihNMeteoPodataka">
+            <input></input>
+            <output></output>
+        </operation>
+        <operation name="dajMeteoPodatkeUDatumskomIntervalu">
+            <input></input>
+            <output></output>
+        </operation>
+        <operation name="dajVremenskeStaniceUBliziniAdrese">
+            <input></input>
+            <output></output>
+        </operation>
+        <operation name="dajPrognozuZaBrojSati">
+            <input></input>
+            <output></output>
+        </operation>
+        <operation name="dajPrognozuZaBrojDana">
+            <input></input>
+            <output></output>
+        </operation>
+    </binding>
+    <service name="MeteoPodaciWS">
+        <port name="MeteoPodaciWSPort" binding="tns:MeteoPodaciWSPortBinding"/>
+    </service>
+    <wsp:Policy wsu:Id="MeteoPodaciWSPortBindingPolicy">
+        <wsp:ExactlyOne>
+            <wsp:All/>
+        </wsp:ExactlyOne>
+    </wsp:Policy>
+</definitions>

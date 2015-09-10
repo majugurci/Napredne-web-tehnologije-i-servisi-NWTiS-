@@ -1,0 +1,50 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package org.foi.nwtis.majugurci.ejb.sb;
+
+import java.util.List;
+import javax.ejb.Stateless;
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Expression;
+import javax.persistence.criteria.Root;
+import org.foi.nwtis.majugurci.ejb.eb.MajugurciGrupe;
+import org.foi.nwtis.majugurci.ejb.eb.MajugurciKorisnici;
+
+/**
+ *
+ * @author Mario
+ */
+@Stateless
+public class MajugurciGrupeFacade extends AbstractFacade<MajugurciGrupe> {
+    @PersistenceContext(unitName = "majugurci_aplikacija_2_ejbPU")
+    private EntityManager em;
+
+    @Override
+    protected EntityManager getEntityManager() {
+        return em;
+    }
+
+    public MajugurciGrupeFacade() {
+        super(MajugurciGrupe.class);
+    }
+    
+    /**
+     * Vraća objekt grupe za zadani naziv grupe
+     * @param zaGrupu naziv grupe
+     * @return objekt MajugurciGrupe
+     */
+    public List<MajugurciGrupe> findByGrupa(String zaGrupu) {
+        CriteriaBuilder cb = getEntityManager().getCriteriaBuilder();
+        CriteriaQuery cq = cb.createQuery();
+        Root<MajugurciGrupe> grupa = cq.from(MajugurciGrupe.class);
+        Expression<String> premaGrupi = grupa.get("opis");
+        cq.where(cb.and(cb.equal(premaGrupi, zaGrupu)));
+        return getEntityManager().createQuery(cq).getResultList();
+    }
+}

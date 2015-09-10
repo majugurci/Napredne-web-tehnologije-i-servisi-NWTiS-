@@ -1,0 +1,119 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package org.foi.nwtis.majugurci.web.zrna;
+
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
+import javax.annotation.PostConstruct;
+import javax.ejb.EJB;
+import javax.faces.application.FacesMessage;
+import javax.faces.bean.ManagedBean;
+import javax.faces.bean.ViewScoped;
+import javax.faces.context.FacesContext;
+import org.foi.nwtis.majugurci.ejb.SpremisteJMSPoruka;
+import org.foi.nwtis.majugurci.web.podaci.PodaciDodanaAdresa;
+import org.foi.nwtis.majugurci.web.slusaci.PodaciObrade;
+
+/**
+ *
+ * @author Mario
+ */
+@ManagedBean
+@ViewScoped
+public class index implements Serializable {
+    @EJB
+    private SpremisteJMSPoruka spremisteJMSPoruka;
+    
+    private List<PodaciDodanaAdresa> adrese;
+    private List<PodaciObrade> mailPoruke;
+    
+    private List<PodaciDodanaAdresa> odabraneAdrese = new ArrayList<>();
+    private List<PodaciObrade> odabraneEmailPoruke = new ArrayList<>();
+
+    /**
+     * Creates a new instance of index
+     */
+    public index() {
+    }
+    
+    @PostConstruct
+    public void init() {
+        adrese = spremisteJMSPoruka.getAdrese();
+        mailPoruke = spremisteJMSPoruka.getMailPoruke();
+    }
+    
+    public void obirisiAdresePoruke() {
+        if (odabraneAdrese.isEmpty()) {
+            FacesContext context = FacesContext.getCurrentInstance();
+            context.addMessage("forma:obrisiPorukeAdrese", new FacesMessage("Niste odabrali poruke za obrisati"));
+        } else {
+            spremisteJMSPoruka.obrisiAdresePoruke(odabraneAdrese);
+        }
+    }
+    
+    public void obirisiSveAdresePoruke() {
+        if (adrese.isEmpty()) {
+            FacesContext context = FacesContext.getCurrentInstance();
+            context.addMessage("forma:obrisiSvePorukeAdrese", new FacesMessage("Nema poruka za obrisati"));
+        } else {
+            spremisteJMSPoruka.obrisiAdresePoruke(adrese);
+        }
+    }
+    
+    public void obirisiMailPoruke() {
+        if (odabraneEmailPoruke.isEmpty()) {
+            FacesContext context = FacesContext.getCurrentInstance();
+            context.addMessage("forma:obrisiPorukeMail", new FacesMessage("Niste odabrali poruke za obrisati"));
+        } else {
+            spremisteJMSPoruka.obrisiMailPoruke(odabraneEmailPoruke);
+        }
+    }
+    
+    public void obirisiSveMailPoruke() {
+        if (mailPoruke.isEmpty()) {
+            FacesContext context = FacesContext.getCurrentInstance();
+            context.addMessage("forma:obrisiSvePorukeMail", new FacesMessage("Nema poruka za obrisati"));
+        } else {
+            spremisteJMSPoruka.obrisiMailPoruke(mailPoruke);
+        }
+    }
+
+    public List<PodaciDodanaAdresa> getAdrese() {
+        return adrese;
+    }
+
+    public void setAdrese(List<PodaciDodanaAdresa> adrese) {
+        this.adrese = adrese;
+    }
+
+    public List<PodaciObrade> getMailPoruke() {
+        return mailPoruke;
+    }
+
+    public void setMailPoruke(List<PodaciObrade> mailPoruke) {
+        this.mailPoruke = mailPoruke;
+    }
+
+    public List<PodaciDodanaAdresa> getOdabraneAdrese() {
+        return odabraneAdrese;
+    }
+
+    public void setOdabraneAdrese(List<PodaciDodanaAdresa> odabraneAdrese) {
+        this.odabraneAdrese = odabraneAdrese;
+    }
+
+    public List<PodaciObrade> getOdabraneEmailPoruke() {
+        return odabraneEmailPoruke;
+    }
+
+    public void setOdabraneEmailPoruke(List<PodaciObrade> odabraneEmailPoruke) {
+        this.odabraneEmailPoruke = odabraneEmailPoruke;
+    }
+    
+    
+    
+}

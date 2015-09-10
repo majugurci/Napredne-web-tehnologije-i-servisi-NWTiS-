@@ -1,0 +1,288 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package org.foi.nwtis.majugurci.web.zrna;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import static java.lang.Thread.sleep;
+import java.net.ConnectException;
+import java.net.Socket;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.ResourceBundle;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.annotation.PostConstruct;
+import javax.ejb.EJB;
+import javax.faces.application.FacesMessage;
+import javax.faces.bean.ManagedBean;
+import javax.faces.bean.ViewScoped;
+import javax.faces.context.FacesContext;
+import javax.servlet.http.HttpSession;
+import org.foi.nwtis.majugurci.ejb.eb.MajugurciGrupe;
+import org.foi.nwtis.majugurci.ejb.eb.MajugurciKorisnici;
+import org.foi.nwtis.majugurci.ejb.sb.MajugurciGrupeFacade;
+import org.foi.nwtis.majugurci.ejb.sb.MajugurciKorisniciFacade;
+import org.foi.nwtis.majugurci.web.podaci.Korisnik;
+
+/**
+ *
+ * @author Mario
+ * 
+ * Zrno koje omogućava administratoru sustava da mijenja korisničke podatke.
+ * Podaci koje može mijenjati su svi oni koje ima smisla promijeniti.
+ * Npr. ne može mijenjati id korisnika u bazi, vrijeme registracije korisnika i sl.
+ * Ako administrator promijeni korisničku ulogu tada se šalje zahtjev socket serveru
+ * kako bi istu stvar napravio u svojoj bazi.
+ */
+@ManagedBean
+@ViewScoped
+public class PregledKorisnikaAzuriranje {
+
+    @EJB
+    private MajugurciGrupeFacade majugurciGrupeFacade;
+
+    @EJB
+    private MajugurciKorisniciFacade majugurciKorisniciFacade;
+
+    private List<MajugurciKorisnici> korisnici;
+
+    private MajugurciKorisnici korisnikUredivanje;
+    private String korisnickoIme;
+
+    private List<MajugurciGrupe> moguceGrupe;
+    private MajugurciGrupe odabranaGrupa;
+    private List<String> opisiGrupa = new ArrayList<>();
+    private String opisOdabraneGrupe;
+
+    private boolean urediPodatke = false;
+
+    ResourceBundle bundle;
+
+    /**
+     * Creates a new instance of pregledKorisnika
+     */
+    public PregledKorisnikaAzuriranje() {
+    }
+
+    /**
+     * Dohvaćanje svih korisnika iz BP za prikaz na ekranu.
+     */
+    @PostConstruct
+    public void init() {
+        FacesContext context = FacesContext.getCurrentInstance();
+        bundle = context.getApplication().getResourceBundle(context, "m");
+
+        korisnici = majugurciKorisniciFacade.findAll();
+
+        //obrisi dummy korisnika iz liste, on sluzi samo za dnevnik
+        Iterator<MajugurciKorisnici> i = korisnici.iterator();
+        while (i.hasNext()) {
+            if (i.next().getKorisnickoIme().equals("NEPOZNATI_KORISNIK")) {
+                i.remove();
+            }
+        }
+
+        moguceGrupe = majugurciGrupeFacade.findAll();
+        for (MajugurciGrupe g : moguceGrupe) {
+            opisiGrupa.add(g.getOpis());
+        }
+    }
+
+    public void urediPodatke(MajugurciKorisnici korisnik) {
+        urediPodatke = true;
+        korisnikUredivanje = korisnik;
+        opisOdabraneGrupe = korisnik.getGrupa().getOpis();
+        korisnickoIme = korisnikUredivanje.getKorisnickoIme();
+    }
+
+    public void upisiPodatkeUBP() {
+        if (korisnickoIme.trim().equals("")) {
+            FacesContext fc = FacesContext.getCurrentInstance();
+            fc.addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR, bundle.getString("korisnici_greskaKorIme"), null));
+        } else {
+            korisnikUredivanje.setKorisnickoIme(korisnickoIme);
+            urediPodatke = false;
+            for (MajugurciGrupe g : moguceGrupe) {
+                if (g.getOpis().equals(opisOdabraneGrupe)) {
+                    odabranaGrupa = g;
+                }
+            }
+
+            //ako se mijenja kor grupa
+            if (!korisnikUredivanje.getGrupa().getOpis().equals(opisOdabraneGrupe)) {
+                korisnikUredivanje.setGrupa(odabranaGrupa);
+                String odgovor = "";
+                if (korisnikUredivanje.getGrupa().getOpis().equals("admin")) {
+                    odgovor = promijeniKorGrupuSocketServer(korisnikUredivanje.getKorisnickoIme(), true);
+                } else {
+                    odgovor = promijeniKorGrupuSocketServer(korisnikUredivanje.getKorisnickoIme(), false);
+                }
+                System.out.println("Odgovor socket servera: " + odgovor);
+            }
+
+            majugurciKorisniciFacade.edit(korisnikUredivanje);
+        }
+
+    }
+
+    /**
+     * Metoda koja poziva socket server te mijenja korisničku grupu
+     *
+     * @param korIme ime korisnika
+     * @param admin true ako se grupa mijenja u admin, false inace
+     * @return
+     */
+    private String promijeniKorGrupuSocketServer(String korIme, boolean admin) {
+        FacesContext context = FacesContext.getCurrentInstance();
+        HttpSession session = (HttpSession) context.getExternalContext().getSession(true);
+        Korisnik k = (Korisnik) session.getAttribute("korisnik");
+        String adminIme = k.getKorisnickoIme();
+        String adminLozinka = k.getLozinka();
+
+        String komanda = "USER " + adminIme + "; PASSWD " + adminLozinka + "; ADMIN " + korIme + ";";
+
+        if (!admin) {
+            komanda = "USER " + adminIme + "; PASSWD " + adminLozinka + "; NOADMIN " + korIme + ";";
+        }
+
+        String odgovor = "";
+
+        try {
+            Socket socket = new Socket("localhost", 8000);
+
+            InputStream is = socket.getInputStream();
+            OutputStream os = socket.getOutputStream();
+
+            os.write(komanda.getBytes("ISO-8859-2"));
+            os.flush();
+
+            socket.shutdownOutput();
+
+            StringBuilder sb = new StringBuilder();
+
+            /*
+             Klijent ceka do 3 sekundi na odgovor servera
+             */
+            for (int i = 0; i < 60; i++) {
+                if (is.available() > 0) {
+                    while (is.available() > 0) {
+                        int znak = is.read();
+                        if (znak == -1) {
+                            break;
+                        }
+                        sb.append((char) znak);
+                    }
+                    break;
+                } else {
+                    sleep(50);
+                }
+
+            }
+
+            odgovor = sb.toString();
+
+            if (is != null) {
+                try {
+                    is.close();
+                } catch (IOException ex) {
+                    Logger.getLogger(PregledKorisnikaAzuriranje.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+
+            if (os != null) {
+                try {
+                    os.close();
+                } catch (IOException ex) {
+                    Logger.getLogger(PregledKorisnikaAzuriranje.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+
+            if (socket != null) {
+                try {
+                    socket.close();
+                } catch (IOException ex) {
+                    Logger.getLogger(PregledKorisnikaAzuriranje.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+        } catch (ConnectException ex) {
+            System.out.println("Server je ugasen");
+        } catch (IOException ex) {
+            Logger.getLogger(PregledKorisnikaAzuriranje.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (InterruptedException ex) {
+            Logger.getLogger(PregledKorisnikaAzuriranje.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
+        return odgovor;
+    }
+
+    public List<MajugurciKorisnici> getKorisnici() {
+        return korisnici;
+    }
+
+    public void setKorisnici(List<MajugurciKorisnici> korisnici) {
+        this.korisnici = korisnici;
+    }
+
+    public boolean isUrediPodatke() {
+        return urediPodatke;
+    }
+
+    public void setUrediPodatke(boolean urediPodatke) {
+        this.urediPodatke = urediPodatke;
+    }
+
+    public MajugurciKorisnici getKorisnikUredivanje() {
+        return korisnikUredivanje;
+    }
+
+    public void setKorisnikUredivanje(MajugurciKorisnici korisnikUredivanje) {
+        this.korisnikUredivanje = korisnikUredivanje;
+    }
+
+    public List<MajugurciGrupe> getMoguceGrupe() {
+        return moguceGrupe;
+    }
+
+    public void setMoguceGrupe(List<MajugurciGrupe> moguceGrupe) {
+        this.moguceGrupe = moguceGrupe;
+    }
+
+    public MajugurciGrupe getOdabranaGrupa() {
+        return odabranaGrupa;
+    }
+
+    public void setOdabranaGrupa(MajugurciGrupe odabranaGrupa) {
+        this.odabranaGrupa = odabranaGrupa;
+    }
+
+    public String getOpisOdabraneGrupe() {
+        return opisOdabraneGrupe;
+    }
+
+    public void setOpisOdabraneGrupe(String opisOdabraneGrupe) {
+        this.opisOdabraneGrupe = opisOdabraneGrupe;
+    }
+
+    public List<String> getOpisiGrupa() {
+        return opisiGrupa;
+    }
+
+    public void setOpisiGrupa(List<String> opisiGrupa) {
+        this.opisiGrupa = opisiGrupa;
+    }
+
+    public String getKorisnickoIme() {
+        return korisnickoIme;
+    }
+
+    public void setKorisnickoIme(String korisnickoIme) {
+        this.korisnickoIme = korisnickoIme;
+    }
+
+}

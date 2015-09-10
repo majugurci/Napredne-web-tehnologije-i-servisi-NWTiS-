@@ -1,0 +1,28 @@
+.tablica {
+    border: 1px solid firebrick;
+    background-color: salmon;
+    width: 95%;
+}
+.zaglavlje {
+    background-color: moccasin;
+    font-weight: bold;
+}
+.parni {
+    background-color: oldlace;    
+    text-indent: 5px;
+}
+.neparni {
+    background-color: whitesmoke;
+    text-indent: 5px;
+}
+.gumb {
+    background-color: indianred;
+    color: ivory;
+    border: 1px solid firebrick;
+}
+.gumb:disabled {
+    background-color: darkorange;
+    color: ivory;
+    border: 1px solid firebrick;
+}
+

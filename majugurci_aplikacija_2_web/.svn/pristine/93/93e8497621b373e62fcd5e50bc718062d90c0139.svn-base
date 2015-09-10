@@ -1,0 +1,730 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="http://xmlns.jcp.org/jsf/html"
+      xmlns:f="http://xmlns.jcp.org/jsf/core"
+      xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+      xmlns:p="http://primefaces.org/ui">
+
+    <f:metadata>
+        <f:event type="preRenderView" listener="#{lokalizacija.init}"/>
+    </f:metadata>
+
+
+
+    <ui:composition template="/predlozak.xhtml">
+
+        <ui:define name="naslov">
+            #{m.pregledAdresa_naslov}
+        </ui:define>
+
+        <ui:define name="navigacija">
+            <li><h:link outcome="/privatno/nadopuniPodatke.xhtml" value="#{m.nadopuniPodatke_naslov}"/></li>
+        </ui:define>
+
+        <ui:define name="sadrzaj">
+            <script type="text/javascript"
+                    src="https://maps.googleapis.com/maps/api/js?key=#{pregledAdresaMeteo.GMJSAPIKey}">
+            </script>
+            <h1>#{m.pregledAdresa_headerTekst}</h1>
+            <fieldset>
+                <h:form id="forma">
+
+                    <!-- ovaj dio služi za prikaz poruke prilikom ajax učitavanja 
+                    kako bi korisnik znao da se nešto događa -->
+                    <p:ajaxStatus onstart="PF('statusDialog').show()" onsuccess="PF('statusDialog').hide()" />
+                    <p:dialog widgetVar="statusDialog" modal="true" draggable="false" closable="false" resizable="false" showHeader="false">
+                        <h:outputLabel style="margin-left: 25%;" value="#{m.pregledAdresa_ajaxPorukaUcitavanje}"/><br/>
+                        <p:graphicImage name="ajax-loader.gif" />
+                    </p:dialog>
+
+                    <article>
+                        <h:panelGroup id="dodajNovuAdresuPodaci">
+
+                            <p>#{m.pregledAdresa_headerDodajNovuAdresu}</p>
+
+                            <h:inputHidden id="zaGreskuDodajNovuAdresu"/>
+                            <h:message for="zaGreskuDodajNovuAdresu" 
+                                       style="color: red; font-style: oblique;"/>
+                            <br/>
+                            <h:outputLabel value="#{m.pregledAdresa_labelAdresa}"/>
+                            <h:inputText value="#{pregledAdresaMeteo.adresaDodajNovu}"/>
+                            <br/>
+                            <h:commandButton value="#{m.pregledAdresa_buttonDodajAdresu}" 
+                                             action="#{pregledAdresaMeteo.dodajNovuAdresu}"
+                                             class="formbutton" 
+                                             rendered="#{pregledAdresaMeteo.pregledDodajNovuAdresu == false}">
+                                <f:ajax execute="@all" render="dodajNovuAdresuPodaci"/>
+                            </h:commandButton>
+
+                            <h:panelGroup rendered="#{pregledAdresaMeteo.pregledDodajNovuAdresu == true}">
+
+                                <h:commandButton value="#{m.pregledAdresa_buttonZatvori}" 
+                                                 action="#{pregledAdresaMeteo.zatvoriDodavanjeNoveAdrese}"
+                                                 class="formbutton">
+                                    <f:ajax execute="@all" render="dodajNovuAdresuPodaci"/>
+                                </h:commandButton>
+
+                                <p>#{m.pregledAdresa_porukaPoslanZahtjevDodavanje}: <i>#{pregledAdresaMeteo.adresaDodajNovu}</i></p>
+                            </h:panelGroup>
+                        </h:panelGroup>
+                    </article>
+
+
+                    <article>
+                        <h:panelGroup id="dohvatiSveAdresePodaci">
+
+                            <p>#{m.pregledAdresa_headerAdreseMeteoPodaci}</p>
+
+                            <h:inputHidden id="zaGreskuSveAdrese"/>
+                            <h:message for="zaGreskuSveAdrese" 
+                                       style="color: red; font-style: oblique;"/>
+                            <br/>
+
+                            <h:commandButton value="#{m.pregledAdresa_buttonDohvatiAdrese}" 
+                                             action="#{pregledAdresaMeteo.dajPregledSvihAdresa}"
+                                             class="formbutton" rendered="#{pregledAdresaMeteo.pregledAdresa == false}">
+                                <f:ajax execute="@all" render="dohvatiSveAdresePodaci"/>
+                            </h:commandButton>
+
+                            <h:panelGroup rendered="#{pregledAdresaMeteo.pregledAdresa == true}">
+
+                                <h:commandButton value="#{m.pregledAdresa_buttonZatvori}" 
+                                                 action="#{pregledAdresaMeteo.zatvoriPregledSvihAdresa}"
+                                                 class="formbutton">
+                                    <f:ajax execute="@all" render="dohvatiSveAdresePodaci"/>
+                                </h:commandButton>
+
+                                <p:dataTable value="#{pregledAdresaMeteo.sveAdreseId}" var="a"
+                                             rows="10" paginator="true" rowsPerPageTemplate="10,20,50"
+                                             paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+                                             paginatorPosition="bottom"
+                                             style="margin-top: 30px;"
+                                             selection="#{pregledAdresaMeteo.izabraneAdrese}" rowKey="#{a.id}">
+
+
+                                    <p:column selectionMode="multiple" style="width:16px;text-align:center"/>
+
+                                    <p:column headerText="#{m.pregledAdresa_tablicaNazivAdrese}">
+                                        #{a.adresa}
+                                    </p:column>
+
+                                </p:dataTable>
+
+                                <br/>
+                                <p:commandButton action="#{pregledAdresaMeteo.jsTestFunction}"
+                                                 update="afterLoad" oncomplete="afterLoad()"
+                                                 value="#{m.pregledAdresa_buttonPrikazMape}" class="formbutton">
+                                    <f:ajax execute="@all" render="dohvatiSveAdresePodaci"/>
+                                </p:commandButton>
+                                <p:commandButton action="#{pregledAdresaMeteo.jsTestFunctionNoviProzor}"
+                                                 update="afterLoad" oncomplete="afterLoad()"
+                                                 value="#{m.pregledAdresa_buttonPrikazMapeNoviProzor}" class="formbutton">
+                                    <f:ajax execute="@all" render="dohvatiSveAdresePodaci"/>
+                                </p:commandButton>
+
+                                <h:panelGroup id="afterLoad" >
+                                    <h:outputScript>
+                                        //<![CDATA[
+
+                                        function afterLoad() {
+                                        var arrayAdrese = #{pregledAdresaMeteo.izabraneAdreseJS};
+                                        document.cookie = 'adreseCookie='+JSON.stringify(arrayAdrese);
+                                        document.cookie = 'proba=proba';
+
+                                        if (#{pregledAdresaMeteo.noviProzor}) {
+                                        //window.location = "testGMJSApi.html";
+                                        window.open("testGMJSApi.html");
+                                        } else {
+                                        setTimeout(initialize, 1000);
+                                        //initialize();
+                                        }
+                                        }
+
+                                        function initialize() {
+                                        var allcookies = document.cookie;
+                                        cookiearray = allcookies.split(';');
+                                        var jsonAdrese;
+                                        for (var i = 0; i < cookiearray.length; i++) {
+                                        name = cookiearray[i].split('=')[0];
+                                        value = cookiearray[i].split('=')[1];
+                                        if (name === 'adreseCookie') {
+                                        jsonAdrese = value;
+                                        }
+                                        }
+
+                                        var adrese = JSON.parse(jsonAdrese);
+
+                                        geocoder = new google.maps.Geocoder();
+
+                                        locations = new Array();
+
+                                        var infowindow = new google.maps.InfoWindow();
+
+                                        for (i = 0; i < adrese.length; i++) {
+
+                                        geocoder.geocode({'address': adrese[i]}, function (i) {
+                                        return(function (results, status) {
+
+                                        if (status == google.maps.GeocoderStatus.OK) {
+                                        var marker = new google.maps.Marker({
+                                        map: map,
+                                        position: results[0].geometry.location
+                                        });
+
+                                        var latitude = results[0].geometry.location.lat();
+                                        var longitude = results[0].geometry.location.lng();
+
+                                        var url = "http://api.openweathermap.org/data/2.5/weather";
+
+                                        $.getJSON(url, {lat: latitude, lon: longitude, units: "metric", APIKEY: "2134232"})
+                                        .done(function (json) {
+                                        //console.log("JSON Data: " + json);
+                                        var sunrise = new Date(json.sys.sunrise * 1000).toUTCString();
+                                        var sunset = new Date(json.sys.sunset * 1000).toUTCString();
+                                        var temperature = json.main.temp;
+                                        var humidity = json.main.humidity;
+                                        var pressure = json.main.pressure;
+                                        var lastUpdate = new Date(json.dt * 1000).toUTCString();
+
+                                        var content = "<p><center><b>Podaci o adresi</b></center>" +
+                                            "<br/><b>Naziv adrese:</b> " + adrese[i] +
+                                            "<br/><b>Puni naziv adrese:</b> " + results[0].formatted_address +
+                                            "<br/><b>Latitude:</b> " + latitude +
+                                            "<br/><b>Longitude:</b> " + longitude +
+                                            "<br/><br/><br/><center><b>MeteoPodaci</b></center>" +
+                                            "<br/><b>Izlazak sunca:</b> " + sunrise +
+                                            "<br/><b>Zalazak sunca:</b> " + sunset +
+                                            "<br/><b>Temperatura:</b> " + temperature + " C" +
+                                            "<br/><b>Vlaga:</b> " + humidity + " %" +
+                                            "<br/><b>Pritisak:</b> " + pressure + " hPa" +
+                                            "<br/><b>Zadnje azuriranje podataka:</b> " + lastUpdate +
+                                            "</p>";
+
+
+                                        google.maps.event.addListener(marker, 'click', (function (marker, i) {
+                                        return function () {
+                                        infowindow.setContent(content);
+                                        infowindow.open(map, marker);
+                                        }
+                                        }
+                                        )(marker, i));
+                                        })
+                                        .fail(function (textStatus, error) {
+                                        var err = textStatus + ", " + error;
+                                        //console.log("Request Failed: " + err);
+                                        var content = "<p><center><b>Podaci o adresi</b></center>" +
+                                            "<br/><b>Naziv adrese:</b> " + adrese[i] +
+                                            "<br/><b>Puni naziv adrese:</b> " + results[0].formatted_address +
+                                            "<br/><b>Latitude:</b> " + latitude +
+                                            "<br/><b>Longitude:</b> " + longitude +
+                                            "<br/><br/><br/><center><b>MeteoPodaci</b></center>" +
+                                            "<br/><b>Greška pri dohvaćanju meteo podataka, osvježite stranicu</b> "
+                                            "</p>";
+
+
+                                        google.maps.event.addListener(marker, 'click', (function (marker, i) {
+                                        return function () {
+                                        infowindow.setContent(content);
+                                        infowindow.open(map, marker);
+                                        }
+                                        }
+                                        )(marker, i));
+                                        });
+
+
+                                        } else {
+                                        //nije vratio adresu
+                                        }
+
+                                        });
+                                        }(i));
+                                        }
+
+                                        var mapOptions = {
+                                        center: {lat: 46.307831, lng: 16.338246},
+                                        zoom: 4
+                                        };
+                                        var map = new google.maps.Map(document.getElementById('map-canvas'),
+                                        mapOptions);
+
+                                        }
+
+                                        //]]>
+                                    </h:outputScript>
+
+
+                                </h:panelGroup>
+
+                                <h:panelGroup rendered="#{pregledAdresaMeteo.prikaziMapu}">
+                                    <br/>
+                                    <h:commandButton value="#{m.pregledAdresa_buttonZatvori}" 
+                                                     action="#{pregledAdresaMeteo.zatvoriMapu}"
+                                                     class="formbutton">
+                                        <f:ajax execute="@all" render="dohvatiSveAdresePodaci"/>
+                                    </h:commandButton>
+
+                                    <div id="map-canvas" style="height: 700px; width: 960px;">
+
+                                    </div>
+                                </h:panelGroup>
+                            </h:panelGroup>
+                        </h:panelGroup>
+                    </article>
+
+                    <article>
+                        <h:panelGroup id="dohvatiSveAdreseKorisnikaPodaci">
+
+                            <p>#{m.pregledAdresa_headerAdreseKorisnika1} (#{pregledAdresaMeteo.korisnickoIme}) #{m.pregledAdresa_headerAdreseKorisnika2}</p>
+
+                            <h:inputHidden id="zaGreskuSveAdreseKorisnika"/>
+                            <h:message for="zaGreskuSveAdreseKorisnika" 
+                                       style="color: red; font-style: oblique;"/>
+                            <br/>
+
+                            <h:commandButton value="#{m.pregledAdresa_buttonDohvatiAdrese}" 
+                                             action="#{pregledAdresaMeteo.dajPregledSvihAdresaKorisnika}"
+                                             class="formbutton" rendered="#{pregledAdresaMeteo.pregledAdresaKorisnika == false}">
+                                <f:ajax execute="@all" render="dohvatiSveAdreseKorisnikaPodaci"/>
+                            </h:commandButton>
+
+                            <h:panelGroup rendered="#{pregledAdresaMeteo.pregledAdresaKorisnika == true}">
+
+                                <h:commandButton value="#{m.pregledAdresa_buttonZatvori}" action="#{pregledAdresaMeteo.zatvoriPregledSvihAdresaKorisnika}"
+                                                 class="formbutton">
+                                    <f:ajax execute="@all" render="dohvatiSveAdreseKorisnikaPodaci"/>
+                                </h:commandButton>
+
+                                <p:dataTable value="#{pregledAdresaMeteo.sveAdreseKorisnika}" var="a"
+                                             rows="10" paginator="true" rowsPerPageTemplate="10,20,50"
+                                             paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+                                             emptyMessage="Nema zapisa za traženi kriterij" 
+                                             paginatorPosition="bottom"
+                                             style="margin-top: 30px;">
+
+                                    <p:column headerText="#{m.pregledAdresa_tablicaNazivAdrese}">
+                                        #{a}
+                                    </p:column>
+
+                                </p:dataTable>
+                            </h:panelGroup>
+                        </h:panelGroup>
+                    </article>
+
+                    <article>
+                        <h:panelGroup id="dohvatiTrenutneMeteoPodatkePodaci">
+
+                            <p>#{m.pregledAdresa_headerTrenutniMeteoPodaci}</p>
+
+                            <h:inputHidden id="zaGreskuTrenutniMeteoPodaci"/>
+                            <h:message for="zaGreskuTrenutniMeteoPodaci" 
+                                       style="color: red; font-style: oblique;"/>
+                            <br/>
+
+                            <h:outputLabel value="#{m.pregledAdresa_labelAdresa}"/>
+                            <h:inputText value="${pregledAdresaMeteo.adresaZaTrenutneMeteoPodatke}"/>
+
+                            <br/>
+
+                            <h:commandButton value="#{m.pregledAdresa_buttonDohvatiMeteoPodatke}" 
+                                             action="#{pregledAdresaMeteo.dajPregledTrenutnihMeteoPodataka}"
+                                             class="formbutton" 
+                                             rendered="#{pregledAdresaMeteo.pregledTrenutniMeteoPodaci == false}">
+                                <f:ajax execute="@all" render="dohvatiTrenutneMeteoPodatkePodaci"/>
+                            </h:commandButton>
+
+                            <h:panelGroup rendered="#{pregledAdresaMeteo.pregledTrenutniMeteoPodaci == true}">
+
+                                <h:commandButton value="#{m.pregledAdresa_buttonZatvori}" 
+                                                 action="#{pregledAdresaMeteo.zatvoriPregledTrenutnihMeteoPodataka}"
+                                                 class="formbutton">
+                                    <f:ajax execute="@all" render="dohvatiTrenutneMeteoPodatkePodaci"/>
+                                </h:commandButton>
+
+                                <p:dataTable value="#{pregledAdresaMeteo.trenutniMeteoPodaci}" var="key"
+                                             emptyMessage="#{m.pregledAdresa_tablicaNemaPodataka}" 
+                                             style="margin-top: 30px;">
+
+                                    <p:column headerText="#{m.pregledAdresa_tablicaTemperatura}">
+                                        #{key.temperatureValue} #{key.temperatureUnit}
+                                    </p:column>
+
+                                    <p:column headerText="#{m.pregledAdresa_tablicaTlak}">
+                                        #{key.pressureValue} #{key.pressureUnit}
+                                    </p:column>
+
+                                    <p:column headerText="#{m.pregledAdresa_tablicaVlaga}">
+                                        #{key.humidityValue} #{key.humidityUnit} 
+                                    </p:column>
+
+                                    <p:column headerText="#{m.pregledAdresa_tablicaVjetar}">
+                                        #{key.windSpeedValue} #{key.windSpeedName} 
+                                    </p:column>
+
+                                    <p:column headerText="#{m.pregledAdresa_tablicaVrijemeAžuriranja}">
+                                        #{key.lastUpdate} 
+                                    </p:column>
+
+                                </p:dataTable>
+                            </h:panelGroup>
+                        </h:panelGroup>
+                    </article>
+
+
+                    <article>
+                        <h:panelGroup id="dohvatiRangListuAdresaPodaci">
+
+                            <p>#{m.pregledAdresa_headerRangLista}</p>
+
+                            <h:inputHidden id="zaGreskuRangListaAdresa"/>
+                            <h:message for="zaGreskuRangListaAdresa" 
+                                       style="color: red; font-style: oblique;"/>
+                            <br/>
+
+                            <h:outputLabel value="#{m.pregledAdresa_labelBrojAdresa}"/>
+                            <h:inputText id="brojElemenata" value="${pregledAdresaMeteo.brojAdresaZaRangListu}"
+                                         validator="#{pregledAdresaMeteo.validatorBrojElemenataRang}" 
+                                         converterMessage=" #{m.pregledAdresa_porukaBrojAdresa}"/>
+                            <h:message style="color: red; font-style: oblique;"
+                                       for="brojElemenata"/>
+
+                            <br/>
+
+                            <h:commandButton value="#{m.pregledAdresa_buttonDohvatiRangListu}" 
+                                             action="#{pregledAdresaMeteo.dajPregledRangListeAdresa}"
+                                             class="formbutton" 
+                                             rendered="#{pregledAdresaMeteo.pregledRangListeAdresa == false}">
+                                <f:param name="odabraniGumb" value="Dohvati rang listu"/>
+                                <f:ajax execute="@all" render="dohvatiRangListuAdresaPodaci"/>
+                            </h:commandButton>
+
+                            <h:panelGroup rendered="#{pregledAdresaMeteo.pregledRangListeAdresa == true}">
+
+                                <h:commandButton value="#{m.pregledAdresa_buttonZatvori}" 
+                                                 action="#{pregledAdresaMeteo.zatvoriPregledRangListeAdresa}"
+                                                 class="formbutton">
+                                    <f:ajax execute="@all" render="dohvatiRangListuAdresaPodaci"/>
+                                </h:commandButton>
+
+                                <p:dataTable value="#{pregledAdresaMeteo.rangListaAdresa}" var="r"
+                                             rows="10" paginator="true" rowsPerPageTemplate="10,20,50"
+                                             paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+                                             emptyMessage="#{m.pregledAdresa_tablicaNemaPodataka}" 
+                                             paginatorPosition="bottom"
+                                             style="margin-top: 30px;">
+
+                                    <p:column headerText="#{m.pregledAdresa_tablicaNazivAdrese}">
+                                        ${r.item.get(0)}
+                                    </p:column>
+
+                                    <p:column headerText="#{m.pregledAdresa_tablicaBrojMeteoPodataka}">
+                                        ${r.item.get(1)}
+                                    </p:column>
+                                </p:dataTable>
+                            </h:panelGroup>
+                        </h:panelGroup>
+                    </article>
+
+
+                    <article>
+                        <h:panelGroup id="dohvatiMeteoPodatkeUVremenskomRazmaku">
+
+                            <p>#{m.pregledAdresa_headerMeteoPodaciInterval}</p>
+
+                            <h:inputHidden id="zaGreskuMeteoPodaciUIntervalu"/>
+                            <h:message for="zaGreskuMeteoPodaciUIntervalu" 
+                                       style="color: red; font-style: oblique;"/>
+                            <br/>
+
+                            <h:outputLabel value="#{m.pregledAdresa_labelAdresa}"/>
+                            <h:inputText value="#{pregledAdresaMeteo.adresaMPInterval}"/>
+                            <br/><br/>
+                            <h:outputLabel value="#{m.pregledAdresa_labelPocetniDatum}"/>
+                            <p:calendar id="datumPocetak" value="#{pregledAdresaMeteo.pocetniDatum}" 
+                                        pattern="dd.MM.yyyy" 
+                                        validator="#{pregledAdresaMeteo.validatorVremenskiInterval}"/>
+                            <h:message for="datumPocetak" style="color: red; font-style: oblique;"/>
+                            <br/><br/>
+                            <h:outputLabel value="#{m.pregledAdresa_labelZavrsniDatum}"/>
+                            <p:calendar id="datumKraj" value="#{pregledAdresaMeteo.zavrsniDatum}" 
+                                        pattern="dd.MM.yyyy" 
+                                        validator="#{pregledAdresaMeteo.validatorVremenskiInterval}"/>
+                            <h:message for="datumKraj" style="color: red; font-style: oblique;"/>
+                            <br/>
+
+                            <h:commandButton value="#{m.pregledAdresa_buttonDohvatiMeteoPodatke}" 
+                                             action="#{pregledAdresaMeteo.dajPregledMPInterval}"
+                                             class="formbutton" 
+                                             rendered="#{pregledAdresaMeteo.pregledMeteoPodatakaInterval == false}">
+                                <f:param name="odabraniGumb" value="dohvatiMeteoPodatkeUDatInt"/>
+                                <f:ajax execute="@all" render="dohvatiMeteoPodatkeUVremenskomRazmaku"/>
+                            </h:commandButton>
+
+                            <h:panelGroup rendered="#{pregledAdresaMeteo.pregledMeteoPodatakaInterval == true}">
+
+                                <h:commandButton value="#{m.pregledAdresa_buttonZatvori}" 
+                                                 action="#{pregledAdresaMeteo.zatvoriPregledMPUIntervalu}"
+                                                 class="formbutton">
+                                    <f:ajax execute="@all" render="dohvatiMeteoPodatkeUVremenskomRazmaku"/>
+                                </h:commandButton>
+
+                                <p:dataTable value="#{pregledAdresaMeteo.meteoPodaciInterval}" var="key"
+                                             rows="10" paginator="true" rowsPerPageTemplate="10,20,50"
+                                             paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+                                             emptyMessage="#{m.pregledAdresa_tablicaNemaPodataka}" 
+                                             paginatorPosition="bottom"
+                                             style="margin-top: 30px;">
+
+                                    <p:column headerText="#{m.pregledAdresa_tablicaTemperatura}">
+                                        #{key.temperatureValue} #{key.temperatureUnit}
+                                    </p:column>
+
+                                    <p:column headerText="#{m.pregledAdresa_tablicaTlak}">
+                                        #{key.pressureValue} #{key.pressureUnit}
+                                    </p:column>
+
+                                    <p:column headerText="#{m.pregledAdresa_tablicaVlaga}">
+                                        #{key.humidityValue} #{key.humidityUnit} 
+                                    </p:column>
+
+                                    <p:column headerText="#{m.pregledAdresa_tablicaVjetar}">
+                                        #{key.windSpeedValue} #{key.windSpeedName} 
+                                    </p:column>
+
+                                    <p:column headerText="#{m.pregledAdresa_tablicaVrijemeAžuriranja}">
+                                        #{key.lastUpdate} 
+                                    </p:column>
+
+                                    <p:column headerText="#{m.pregledAdresa_tablicaVrijemeSpremanjaBP}">
+                                        #{key.vrijemeSpremanja} 
+                                    </p:column>
+                                </p:dataTable>
+                            </h:panelGroup>
+                        </h:panelGroup>
+                    </article>
+
+
+                    <article>
+                        <h:panelGroup id="dohvatiVremenskeStaniceUBliziniAdresePodaci">
+
+                            <p>#{m.pregledAdresa_headerMeteoStaniceBlizuAdrese}</p>
+
+                            <h:inputHidden id="zaGreskuMeteoStaniceUBliziniAdrese"/>
+                            <h:message for="zaGreskuMeteoStaniceUBliziniAdrese" 
+                                       style="color: red; font-style: oblique;"/>
+                            <br/>
+
+                            <h:outputLabel value="#{m.pregledAdresa_labelAdresa}"/>
+                            <h:inputText value="#{pregledAdresaMeteo.adresaMeteoStaniceUBlizinAdrese}"/>
+                            <br/><br/>
+                            <h:outputLabel value="#{m.pregledAdresa_labelBrojStanica}"/>
+                            <h:inputText id="brojStanica" value="${pregledAdresaMeteo.brojStanicaUBliziniAdrese}"
+                                         validator="#{pregledAdresaMeteo.validatorBrojStanica}" 
+                                         converterMessage=" #{m.pregledAdresa_porukaBrojAdresa}"/>
+                            <h:message style="color: red; font-style: oblique;"
+                                       for="brojStanica"/>
+                            <br/>
+
+                            <h:commandButton value="#{m.pregledAdresa_buttonDohvatiMeteoStanice}" 
+                                             action="#{pregledAdresaMeteo.dajPregledMeteoStanicaUBliziniAdrese}"
+                                             class="formbutton" 
+                                             rendered="#{pregledAdresaMeteo.pregledMeteoStaniceUBliziniAdrese == false}">
+                                <f:param name="odabraniGumb" value="dohvatiMeteoStanice"/>
+                                <f:ajax execute="@all" render="dohvatiVremenskeStaniceUBliziniAdresePodaci"/>
+                            </h:commandButton>
+
+                            <h:panelGroup rendered="#{pregledAdresaMeteo.pregledMeteoStaniceUBliziniAdrese == true}">
+
+                                <h:commandButton value="#{m.pregledAdresa_buttonZatvori}" 
+                                                 action="#{pregledAdresaMeteo.zatvoriPregledMeteoStaniceUBliziniAdrese}"
+                                                 class="formbutton">
+                                    <f:ajax execute="@all" render="dohvatiVremenskeStaniceUBliziniAdresePodaci"/>
+                                </h:commandButton>
+
+                                <p:dataTable value="#{pregledAdresaMeteo.meteoStaniceUBliziniAdrese}" var="key"
+                                             rows="10" paginator="true" rowsPerPageTemplate="10,20,50"
+                                             paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+                                             emptyMessage="#{m.pregledAdresa_tablicaNemaPodataka}" 
+                                             paginatorPosition="bottom"
+                                             style="margin-top: 30px;">
+
+                                    <p:column headerText="#{m.pregledAdresa_tablicaId}">
+                                        #{key.id}
+                                    </p:column>
+
+                                    <p:column headerText="#{m.pregledAdresa_tablicaNazivStanice}">
+                                        #{key.name}
+                                    </p:column>
+
+                                    <p:column headerText="#{m.pregledAdresa_tablicaStatus}">
+                                        #{key.status}
+                                    </p:column>
+
+                                    <p:column headerText="#{m.pregledAdresa_tablicaGeoSirina}">
+                                        #{key.location.latitude}
+                                    </p:column>
+
+                                    <p:column headerText="#{m.pregledAdresa_tablicaGeoDuzina}">
+                                        #{key.location.longitude}
+                                    </p:column>
+
+                                    <p:column headerText="#{m.pregledAdresa_tablicaUdaljenost}">
+                                        #{key.distanceValue} #{key.distanceUnit} 
+                                    </p:column>
+                                </p:dataTable>
+                            </h:panelGroup>
+                        </h:panelGroup>
+                    </article>
+
+
+                    <article>
+                        <h:panelGroup id="dohvatiPrognozuZaBrojSatiPodaci">
+
+                            <p>#{m.pregledAdresa_headerPrognozaSati}</p>
+
+                            <h:inputHidden id="zaGreskuPrognozaBrojSati"/>
+                            <h:message for="zaGreskuPrognozaBrojSati" 
+                                       style="color: red; font-style: oblique;"/>
+                            <br/>
+
+                            <h:outputLabel value="#{m.pregledAdresa_labelAdresa}"/>
+                            <h:inputText value="#{pregledAdresaMeteo.adresaPrognozaBrojSati}"/>
+                            <br/><br/>
+                            <h:outputLabel value="#{m.pregledAdresa_labelBrojSati}"/>
+                            <h:inputText id="brojSati" value="${pregledAdresaMeteo.brojSatiPrognoza}"
+                                         validator="#{pregledAdresaMeteo.validatorBrojSati}" 
+                                         converterMessage=" #{m.pregledAdresa_porukaBrojAdresa}"/>
+                            <h:message style="color: red; font-style: oblique;"
+                                       for="brojSati"/>
+                            <br/>
+
+                            <h:commandButton value="#{m.pregledAdresa_buttonDohvatiMeteoPrognozu}" 
+                                             action="#{pregledAdresaMeteo.dajPregledMeteoPrognozePoSatima}"
+                                             class="formbutton" 
+                                             rendered="#{pregledAdresaMeteo.pregledPrognozeBrojSati == false}">
+                                <f:param name="odabraniGumb" value="dohvatiMeteoPrognozuSati"/>
+                                <f:ajax execute="@all" render="dohvatiPrognozuZaBrojSatiPodaci"/>
+                            </h:commandButton>
+
+                            <h:panelGroup rendered="#{pregledAdresaMeteo.pregledPrognozeBrojSati == true}">
+
+                                <h:commandButton value="#{m.pregledAdresa_buttonZatvori}" 
+                                                 action="#{pregledAdresaMeteo.zatvoriPregledPrognozeBrojSati}"
+                                                 class="formbutton">
+                                    <f:ajax execute="@all" render="dohvatiPrognozuZaBrojSatiPodaci"/>
+                                </h:commandButton>
+
+                                <h2>#{m.pregledAdresa_stringPrognozaZa} ${pregledAdresaMeteo.adresaPrognozaBrojSati} #{m.pregledAdresa_stringZa} #{pregledAdresaMeteo.brojSatiPrognoza} #{m.pregledAdresa_stringSati}</h2>
+
+                                <p:dataTable value="#{pregledAdresaMeteo.meteoPrognozeBrojSati}" var="key"
+                                             rows="10" paginator="true" rowsPerPageTemplate="10,20,50"
+                                             paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+                                             emptyMessage="Nema zapisa za traženi kriterij" 
+                                             paginatorPosition="bottom"
+                                             style="margin-top: 30px;">
+
+                                    <p:column headerText="#{m.pregledAdresa_tablicaVrijeme}">
+                                        #{key.sat}
+                                    </p:column>
+
+                                    <p:column headerText="#{m.pregledAdresa_tablicaTemperatura}">
+                                        #{key.prognoza.temperatureValue} #{key.prognoza.temperatureUnit}
+                                    </p:column>
+
+                                    <p:column headerText="#{m.pregledAdresa_tablicaTlak}">
+                                        #{key.prognoza.pressureValue} #{key.prognoza.pressureUnit}
+                                    </p:column>
+
+                                    <p:column headerText="#{m.pregledAdresa_tablicaVlaga}">
+                                        #{key.prognoza.humidityValue} #{key.prognoza.humidityUnit} 
+                                    </p:column>
+
+                                    <p:column headerText="#{m.pregledAdresa_tablicaVjetar}">
+                                        #{key.prognoza.windSpeedValue} #{key.prognoza.windSpeedName} 
+                                    </p:column>
+                                </p:dataTable>
+                            </h:panelGroup>
+                        </h:panelGroup>
+                    </article>
+
+
+                    <article>
+                        <h:panelGroup id="dohvatiPrognozuZaBrojDanaPodaci">
+
+                            <p>#{m.pregledAdresa_headerPrognozaDani}</p>
+
+                            <h:inputHidden id="zaGreskuPrognozaBrojDana"/>
+                            <h:message for="zaGreskuPrognozaBrojDana" 
+                                       style="color: red; font-style: oblique;"/>
+                            <br/>
+
+                            <h:outputLabel value="#{m.pregledAdresa_labelAdresa}"/>
+                            <h:inputText value="#{pregledAdresaMeteo.adresaPrognozaBrojDana}"/>
+                            <br/><br/>
+                            <h:outputLabel value="#{m.pregledAdresa_labelBrojDana}"/>
+                            <h:inputText id="brojDana" value="${pregledAdresaMeteo.brojDanaPrognoza}"
+                                         validator="#{pregledAdresaMeteo.validatorBrojDana}" 
+                                         converterMessage=" #{m.pregledAdresa_porukaBrojAdresa}"/>
+                            <h:message style="color: red; font-style: oblique;"
+                                       for="brojDana"/>
+                            <br/>
+
+                            <h:commandButton value="#{m.pregledAdresa_buttonDohvatiMeteoPrognozu}" 
+                                             action="#{pregledAdresaMeteo.dajPregledMeteoPrognozePoDanima}"
+                                             class="formbutton" 
+                                             rendered="#{pregledAdresaMeteo.pregledPrognozeBrojDana == false}">
+                                <f:param name="odabraniGumb" value="dohvatiMeteoPrognozuDani"/>
+                                <f:ajax execute="@all" render="dohvatiPrognozuZaBrojDanaPodaci"/>
+                            </h:commandButton>
+
+                            <h:panelGroup rendered="#{pregledAdresaMeteo.pregledPrognozeBrojDana == true}">
+
+                                <h:commandButton value="#{m.pregledAdresa_buttonZatvori}" 
+                                                 action="#{pregledAdresaMeteo.zatvoriPregledPrognozeBrojDana}"
+                                                 class="formbutton">
+                                    <f:ajax execute="@all" render="dohvatiPrognozuZaBrojDanaPodaci"/>
+                                </h:commandButton>
+
+                                <h2>#{m.pregledAdresa_stringPrognozaZa} ${pregledAdresaMeteo.adresaPrognozaBrojDana} #{m.pregledAdresa_stringZa} #{pregledAdresaMeteo.brojDanaPrognoza} #{m.pregledAdresa_stringDani}</h2>
+
+                                <p:dataTable value="#{pregledAdresaMeteo.meteoPrognozeBrojDana}" var="key"
+                                             rows="10" paginator="true" rowsPerPageTemplate="10,20,50"
+                                             paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+                                             emptyMessage="#{m.pregledAdresa_tablicaNemaPodataka}" 
+                                             paginatorPosition="bottom"
+                                             style="margin-top: 30px;">
+
+                                    <p:column headerText="#{m.pregledAdresa_tablicaDan}">
+                                        #{key.dan}
+                                    </p:column>
+
+                                    <p:column headerText="#{m.pregledAdresa_tablicaDatum}">
+                                        #{key.prognoza.lastUpdate}
+                                    </p:column>
+
+                                    <p:column headerText="#{m.pregledAdresa_tablicaTemperatura}">
+                                        #{key.prognoza.temperatureValue} #{key.prognoza.temperatureUnit}
+                                    </p:column>
+
+                                    <p:column headerText="#{m.pregledAdresa_tablicaTlak}">
+                                        #{key.prognoza.pressureValue} #{key.prognoza.pressureUnit}
+                                    </p:column>
+
+                                    <p:column headerText="#{m.pregledAdresa_tablicaVlaga}">
+                                        #{key.prognoza.humidityValue} #{key.prognoza.humidityUnit} 
+                                    </p:column>
+
+                                    <p:column headerText="#{m.pregledAdresa_tablicaVjetar}">
+                                        #{key.prognoza.windSpeedValue} #{key.prognoza.windSpeedName} 
+                                    </p:column>
+                                </p:dataTable>
+                            </h:panelGroup>
+                        </h:panelGroup>
+                    </article>
+
+                </h:form>
+            </fieldset>
+        </ui:define>
+    </ui:composition>
+</html>
+

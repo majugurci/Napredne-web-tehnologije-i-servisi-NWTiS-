@@ -1,0 +1,1 @@
+ALTER DATABASE nwtis_majugurci_bp_1 CHARACTER SET utf8 COLLATE utf8_unicode_ci;

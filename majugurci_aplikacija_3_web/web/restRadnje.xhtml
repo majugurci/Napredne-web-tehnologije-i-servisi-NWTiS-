@@ -1,0 +1,164 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="http://xmlns.jcp.org/jsf/html"
+      xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+      xmlns:p="http://primefaces.org/ui"
+      xmlns:f="http://xmlns.jcp.org/jsf/core">
+
+    <ui:composition template="./predlozak.xhtml">
+
+        <ui:define name="naslov">
+            REST radnje
+        </ui:define>
+
+        <ui:define name="sadrzaj">
+            <h1>REST radnje</h1>
+
+            <fieldset>
+                <h:form id="forma">
+
+                    <article>
+                        <p>Podaci aktivnih korisnika preko REST servisa</p>
+
+                        <h:commandButton value="Dohvati podatke"
+                                         action="#{rESTRadnje.dohvatiKorPodatke}"
+                                         rendered="#{rESTRadnje.imaKorisnika == false}"
+                                         class="formbutton"/>
+
+                        <h:commandButton value="Zatvori"
+                                         action="#{rESTRadnje.zatvoriPregledKorisnika}"
+                                         rendered="#{rESTRadnje.imaKorisnika}"
+                                         class="formbutton"/>
+
+                        <br/>
+                        <h:inputHidden id="zaOdgovorServera"/>
+                        <h:message for="zaOdgovorServera" 
+                                   style="color: blue; font-style: oblique;"/>
+
+
+                        <p:dataTable value="#{rESTRadnje.aktivniKorisnici}" var="k"
+                                     rows="10" paginator="true" rowsPerPageTemplate="10,20,50"
+                                     paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+                                     paginatorPosition="bottom"
+                                     emptyMessage="Nema aktivnih korisnika"
+                                     style="margin-top: 30px;"
+                                     rendered="#{rESTRadnje.imaKorisnika}"
+                                     selection="#{rESTRadnje.izabraniKorisnik}" rowKey="#{k.idKorisnika}">
+
+                            <f:facet name="header">
+                                Odaberi
+                            </f:facet>
+                            <p:column selectionMode="single" style="width:16px;text-align:center"/>
+
+                            <p:column headerText="Korisnik id">
+                                #{k.idKorisnika}
+                            </p:column>
+
+                            <p:column headerText="Korisničko ime">
+                                #{k.korisnickoIme}
+                            </p:column>
+
+                            <p:column headerText="Lozinka">
+                                #{k.lozinka}
+                            </p:column>
+
+                            <p:column headerText="Email">
+                                #{k.email}
+                            </p:column>
+
+                            <p:column headerText="Grupa id">
+                                #{k.grupa}
+                            </p:column>
+
+                            <p:column headerText="Grupa opis">
+                                #{k.grupaOpis}
+                            </p:column>
+
+                            <p:column headerText="Vrijeme registracije">
+                                #{k.vrijemeRegistracije}
+                            </p:column>
+
+                        </p:dataTable>
+
+                        <h:commandButton value="Dohvati adrese korisnika"
+                                         action="#{rESTRadnje.dohvatiAdreseKorisnika}"
+                                         rendered="#{rESTRadnje.imaKorisnika}"
+                                         class="formbutton"/>
+                        <br/>
+                        <h:inputHidden id="zaGreskuAdrese"/>
+                        <h:message for="zaGreskuAdrese" 
+                                   style="color: red; font-style: oblique;"/>
+
+                        <h:commandButton value="Zatvori"
+                                         action="#{rESTRadnje.zatvoriPregledAdresa}"
+                                         rendered="#{rESTRadnje.imaAdresa}"
+                                         class="formbutton"/>
+
+                        <p:dataTable value="#{rESTRadnje.adreseKorisnika}" var="a"
+                                     rows="10" paginator="true" rowsPerPageTemplate="10,20,50"
+                                     paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+                                     paginatorPosition="bottom"
+                                     emptyMessage="Nema adresa"
+                                     style="margin-top: 30px;"
+                                     rendered="#{rESTRadnje.imaAdresa}"
+                                     selection="#{rESTRadnje.izabranaAdresa}" rowKey="#{a}">
+
+                            <p:column selectionMode="single" style="width:16px;text-align:center"/>
+
+                            <p:column headerText="Adresa">
+                                #{a}
+                            </p:column>
+                        </p:dataTable>
+                        <h:commandButton value="Dohvati meteo podatke"
+                                         action="#{rESTRadnje.dohvatiMeteoPodatke}"
+                                         rendered="#{rESTRadnje.imaAdresa}"
+                                         class="formbutton"/>
+                        <br/>
+                        <h:inputHidden id="zaGreskuMeteo"/>
+                        <h:message for="zaGreskuMeteo" 
+                                   style="color: red; font-style: oblique;"/>
+
+                        
+                        <h:commandButton value="Zatvori"
+                                         action="#{rESTRadnje.zatvoriPregledMeteo}"
+                                         rendered="#{rESTRadnje.imaMeteoPodataka}"
+                                         class="formbutton"/>
+
+                        <p:dataTable value="#{rESTRadnje.meteoPodaci}" var="m"
+                                     emptyMessage="Nema meteopodataka"
+                                     style="margin-top: 30px;"
+                                     rendered="#{rESTRadnje.imaMeteoPodataka}">
+
+                            <p:column headerText="Adresa">
+                                #{rESTRadnje.izabranaAdresa}
+                            </p:column>
+                            
+                            <p:column headerText="Temperatura">
+                                #{m.temperatureValue} #{m.temperatureUnit}
+                            </p:column>
+                            
+                            <p:column headerText="Vlaga">
+                                #{m.humidityValue} #{m.humidityUnit} 
+                            </p:column>
+                            
+                            <p:column headerText="Tlak">
+                                #{m.pressureValue} #{m.pressureUnit}
+                            </p:column>
+                            
+                            <p:column headerText="Geo širina">
+                                #{m.latitude}
+                            </p:column>
+                            
+                            <p:column headerText="Geo dužina">
+                                #{m.longitude}
+                            </p:column>
+                        </p:dataTable>
+                    </article>
+
+                </h:form>
+            </fieldset>
+        </ui:define>
+    </ui:composition>
+</html>
+

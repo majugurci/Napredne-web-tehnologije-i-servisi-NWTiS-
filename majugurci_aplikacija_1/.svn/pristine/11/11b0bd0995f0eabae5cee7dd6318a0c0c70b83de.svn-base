@@ -1,0 +1,31 @@
+<%-- 
+    Document   : azurirajStanje
+    Created on : May 31, 2015, 4:02:17 PM
+    Author     : Mario
+--%>
+
+<%@page contentType="text/html" pageEncoding="UTF-8"%>
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <title>Ažuriranje stanja</title>
+    </head>
+    <body>
+
+        <%
+            request.setCharacterEncoding("UTF-8");
+            response.setCharacterEncoding("UTF-8");
+        %>
+
+        <h1>Ažuriranje stanja</h1>
+        Dobrodošli: ${sessionScope.korisnik.korisnickoIme} <br/><br/>
+
+        <form action="${pageContext.servletContext.contextPath}/PregledFinancija" method="POST">
+            Trenutno stanje: <input name="korSredstva" value="${korSredstva}" readonly="true"/> 
+            Novo stanje: <input name="korSredstvaNovo"/> 
+            <input name="azuriraj" value="true" hidden="true"/> 
+            <input name="Ažuriraj stanje" type="submit" value="Ažuriraj stanje"/>
+        </form>
+    </body>
+</html>

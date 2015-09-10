@@ -1,0 +1,374 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package org.foi.nwtis.majugurci.web.filteri;
+
+import java.io.IOException;
+import java.io.PrintStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.Date;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.naming.Context;
+import javax.naming.InitialContext;
+import javax.naming.NamingException;
+import javax.servlet.DispatcherType;
+import javax.servlet.Filter;
+import javax.servlet.FilterChain;
+import javax.servlet.FilterConfig;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.annotation.WebFilter;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import org.foi.nwtis.majugurci.ejb.eb.MajugurciDnevnik;
+import org.foi.nwtis.majugurci.ejb.eb.MajugurciKorisnici;
+import org.foi.nwtis.majugurci.ejb.sb.MajugurciDnevnikFacade;
+import org.foi.nwtis.majugurci.ejb.sb.MajugurciGrupeFacade;
+import org.foi.nwtis.majugurci.ejb.sb.MajugurciKorisniciFacade;
+import org.foi.nwtis.majugurci.web.podaci.Korisnik;
+
+/**
+ *
+ * @author Mario
+ * 
+ * Aplikacijski filter koji bilježi sve zahtjeve prema nekoj web lokaciji
+ * te zapisuje statističke podatke o zahtjevu u BP.
+ * 
+ */
+@WebFilter(filterName = "TimerFilter", urlPatterns = {"*.xhtml"}, dispatcherTypes = {DispatcherType.REQUEST, DispatcherType.FORWARD})
+public class TimerFilter implements Filter {
+
+    MajugurciGrupeFacade majugurciGrupeFacade = lookupMajugurciGrupeFacadeBean();
+    MajugurciKorisniciFacade majugurciKorisniciFacade = lookupMajugurciKorisniciFacadeBean();
+    MajugurciDnevnikFacade majugurciDnevnikFacade = lookupMajugurciDnevnikFacadeBean();
+
+    private static final boolean debug = true;
+
+    // The filter configuration object we are associated with.  If
+    // this value is null, this filter instance is not currently
+    // configured. 
+    private FilterConfig filterConfig = null;
+
+    public TimerFilter() {
+    }
+
+    private void doBeforeProcessing(ServletRequest request, ServletResponse response)
+            throws IOException, ServletException {
+        if (debug) {
+            log("FilterAplikacije:DoBeforeProcessing");
+        }
+
+        // Write code here to process the request and/or response before
+        // the rest of the filter chain is invoked.
+        // For example, a logging filter might log items on the request object,
+        // such as the parameters.
+	/*
+         for (Enumeration en = request.getParameterNames(); en.hasMoreElements(); ) {
+         String URLName = (String)en.nextElement();
+         String values[] = request.getParameterValues(URLName);
+         int n = values.length;
+         StringBuffer buf = new StringBuffer();
+         buf.append(URLName);
+         buf.append("=");
+         for(int i=0; i < n; i++) {
+         buf.append(values[i]);
+         if (i < n-1)
+         buf.append(",");
+         }
+         log(buf.toString());
+         }
+         */
+    }
+
+    private void doAfterProcessing(ServletRequest request, ServletResponse response)
+            throws IOException, ServletException {
+        if (debug) {
+            log("FilterAplikacije:DoAfterProcessing");
+        }
+
+	// Write code here to process the request and/or response after
+        // the rest of the filter chain is invoked.
+        // For example, a logging filter might log the attributes on the
+        // request object after the request has been processed. 
+	/*
+         for (Enumeration en = request.getAttributeNames(); en.hasMoreElements(); ) {
+         String URLName = (String)en.nextElement();
+         Object value = request.getAttribute(URLName);
+         log("attribute: " + URLName + "=" + value.toString());
+
+         }
+         */
+        // For example, a filter might append something to the response.
+	/*
+         PrintWriter respOut = new PrintWriter(response.getWriter());
+         respOut.println("<P><B>This has been appended by an intrusive filter.</B>");
+         */
+    }
+
+    /**
+     *
+     * @param request The servlet request we are processing
+     * @param response The servlet response we are creating
+     * @param chain The filter chain we are processing
+     *
+     * @exception IOException if an input/output error occurs
+     * @exception ServletException if a servlet error occurs
+     */
+    public void doFilter(ServletRequest request, ServletResponse response,
+            FilterChain chain)
+            throws IOException, ServletException {
+
+        if (debug) {
+            log("FilterAplikacije:doFilter()");
+        }
+
+        long pocetakObrade = System.currentTimeMillis();
+
+        doBeforeProcessing(request, response);
+
+        HttpServletResponse hsr = (HttpServletResponse) response;
+        int status = hsr.getStatus();
+
+        Throwable problem = null;
+        try {
+            /*HttpServletRequest req = (HttpServletRequest) request;
+
+             if (req.getRequestURI().startsWith(req.getContextPath() + ResourceHandler.RESOURCE_IDENTIFIER)) {
+             chain.doFilter(request, response); // Let it continue.
+             return;
+             }*/
+            chain.doFilter(request, response);
+        } catch (Throwable t) {
+            // If an exception is thrown somewhere down the filter chain,
+            // we still want to execute our after processing, and then
+            // rethrow the problem after that.
+            problem = t;
+            t.printStackTrace();
+        }
+
+        doAfterProcessing(request, response);
+
+        String URLName = "servlet";
+        if (request instanceof HttpServletRequest) {
+            URLName = ((HttpServletRequest) request).getRequestURI();
+        }
+
+        String ipAdresa = getClientIpAddr((HttpServletRequest) request);
+
+        long krajObrade = System.currentTimeMillis();
+
+        long trajanjeObrade = krajObrade - pocetakObrade;
+
+        String korisnickoIme;
+
+        HttpServletRequest hsreq = (HttpServletRequest) request;
+        HttpSession hs = hsreq.getSession(false);
+        if (hs == null || hs.getAttribute("korisnik") == null) {
+            korisnickoIme = "NEPOZNATI_KORISNIK";
+        } else {
+            korisnickoIme = ((Korisnik) hs.getAttribute("korisnik")).getKorisnickoIme();
+        }
+
+        MajugurciKorisnici mk = majugurciKorisniciFacade.findByKorisnik(korisnickoIme).get(0);
+
+        MajugurciDnevnik md = new MajugurciDnevnik();
+        md.setIpadresa(ipAdresa);
+        md.setKorisnik(mk);
+        md.setStatus(status);
+        md.setTrajanje((int) trajanjeObrade);
+        md.setUrl(URLName);
+        md.setVrijeme(new Date());
+        md.setOpis(URLName);
+        
+        if (!URLName.startsWith("/majugurci_aplikacija_2_web/javax.faces.resource")) {
+            majugurciDnevnikFacade.create(md);
+        }
+        
+        
+
+        /*
+        //za pogledati koji constraint nije dobar
+        try {
+            majugurciDnevnikFacade.create(md);
+        } catch (EJBException e) {
+            @SuppressWarnings("ThrowableResultIgnored")
+            Exception cause = e.getCausedByException();
+            if (cause instanceof ConstraintViolationException) {
+                @SuppressWarnings("ThrowableResultIgnored")
+                ConstraintViolationException cve = (ConstraintViolationException) e.getCausedByException();
+                for (Iterator<ConstraintViolation<?>> it = cve.getConstraintViolations().iterator(); it.hasNext();) {
+                    ConstraintViolation<? extends Object> v = it.next();
+                    System.err.println(v);
+                    System.err.println("==>>" + v.getMessage());
+                }
+            }
+           // Assert.fail("ejb exception");
+        }
+        */
+
+        // If there was a problem, we want to rethrow it if it is
+        // a known type, otherwise log it.
+        if (problem != null) {
+            if (problem instanceof ServletException) {
+                throw (ServletException) problem;
+            }
+            if (problem instanceof IOException) {
+                throw (IOException) problem;
+            }
+            sendProcessingError(problem, response);
+        }
+    }
+
+    /**
+     * Return the filter configuration object for this filter.
+     */
+    public FilterConfig getFilterConfig() {
+        return (this.filterConfig);
+    }
+
+    /**
+     * Set the filter configuration object for this filter.
+     *
+     * @param filterConfig The filter configuration object
+     */
+    public void setFilterConfig(FilterConfig filterConfig) {
+        this.filterConfig = filterConfig;
+    }
+
+    /**
+     * Destroy method for this filter
+     */
+    public void destroy() {
+    }
+
+    /**
+     * Init method for this filter
+     */
+    public void init(FilterConfig filterConfig) {
+        this.filterConfig = filterConfig;
+        if (filterConfig != null) {
+            if (debug) {
+                log("FilterAplikacije:Initializing filter");
+            }
+        }
+    }
+
+    /**
+     * Return a String representation of this object.
+     */
+    @Override
+    public String toString() {
+        if (filterConfig == null) {
+            return ("FilterAplikacije()");
+        }
+        StringBuffer sb = new StringBuffer("FilterAplikacije(");
+        sb.append(filterConfig);
+        sb.append(")");
+        return (sb.toString());
+    }
+
+    private void sendProcessingError(Throwable t, ServletResponse response) {
+        String stackTrace = getStackTrace(t);
+
+        if (stackTrace != null && !stackTrace.equals("")) {
+            try {
+                response.setContentType("text/html");
+                PrintStream ps = new PrintStream(response.getOutputStream());
+                PrintWriter pw = new PrintWriter(ps);
+                pw.print("<html>\n<head>\n<title>Error</title>\n</head>\n<body>\n"); //NOI18N
+
+                // PENDING! Localize this for next official release
+                pw.print("<h1>The resource did not process correctly</h1>\n<pre>\n");
+                pw.print(stackTrace);
+                pw.print("</pre></body>\n</html>"); //NOI18N
+                pw.close();
+                ps.close();
+                response.getOutputStream().close();
+            } catch (Exception ex) {
+            }
+        } else {
+            try {
+                PrintStream ps = new PrintStream(response.getOutputStream());
+                t.printStackTrace(ps);
+                ps.close();
+                response.getOutputStream().close();
+            } catch (Exception ex) {
+            }
+        }
+    }
+
+    public static String getStackTrace(Throwable t) {
+        String stackTrace = null;
+        try {
+            StringWriter sw = new StringWriter();
+            PrintWriter pw = new PrintWriter(sw);
+            t.printStackTrace(pw);
+            pw.close();
+            sw.close();
+            stackTrace = sw.getBuffer().toString();
+        } catch (Exception ex) {
+        }
+        return stackTrace;
+    }
+
+    public void log(String msg) {
+        filterConfig.getServletContext().log(msg);
+    }
+
+    public static String getClientIpAddr(HttpServletRequest request) {
+        String ip = request.getHeader("X-Forwarded-For");
+        if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("Proxy-Client-IP");
+        }
+        if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("WL-Proxy-Client-IP");
+        }
+        if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("HTTP_CLIENT_IP");
+        }
+        if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("HTTP_X_FORWARDED_FOR");
+        }
+        if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getRemoteAddr();
+        }
+        return ip;
+    }
+
+    private MajugurciDnevnikFacade lookupMajugurciDnevnikFacadeBean() {
+        try {
+            Context c = new InitialContext();
+            return (MajugurciDnevnikFacade) c.lookup("java:global/majugurci_aplikacija_2/majugurci_aplikacija_2_ejb/MajugurciDnevnikFacade!org.foi.nwtis.majugurci.ejb.sb.MajugurciDnevnikFacade");
+        } catch (NamingException ne) {
+            Logger.getLogger(getClass().getName()).log(Level.SEVERE, "exception caught", ne);
+            throw new RuntimeException(ne);
+        }
+    }
+
+    private MajugurciKorisniciFacade lookupMajugurciKorisniciFacadeBean() {
+        try {
+            Context c = new InitialContext();
+            return (MajugurciKorisniciFacade) c.lookup("java:global/majugurci_aplikacija_2/majugurci_aplikacija_2_ejb/MajugurciKorisniciFacade!org.foi.nwtis.majugurci.ejb.sb.MajugurciKorisniciFacade");
+        } catch (NamingException ne) {
+            Logger.getLogger(getClass().getName()).log(Level.SEVERE, "exception caught", ne);
+            throw new RuntimeException(ne);
+        }
+    }
+
+    private MajugurciGrupeFacade lookupMajugurciGrupeFacadeBean() {
+        try {
+            Context c = new InitialContext();
+            return (MajugurciGrupeFacade) c.lookup("java:global/majugurci_aplikacija_2/majugurci_aplikacija_2_ejb/MajugurciGrupeFacade!org.foi.nwtis.majugurci.ejb.sb.MajugurciGrupeFacade");
+        } catch (NamingException ne) {
+            Logger.getLogger(getClass().getName()).log(Level.SEVERE, "exception caught", ne);
+            throw new RuntimeException(ne);
+        }
+    }
+
+}

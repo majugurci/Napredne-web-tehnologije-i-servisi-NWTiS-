@@ -1,0 +1,74 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:f="http://xmlns.jcp.org/jsf/core"
+      xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+      xmlns:h="http://xmlns.jcp.org/jsf/html"
+      xmlns:p="http://primefaces.org/ui">
+    <f:view locale="#{lokalizacija.vazecaLokalizacija}">
+
+        <f:metadata>
+            <f:event type="preRenderView" listener="#{lokalizacija.init}"/>
+        </f:metadata>
+
+        <ui:composition template="/predlozak.xhtml">
+
+            <ui:define name="naslov">
+                #{m.dnevnikRada_naslov}
+            </ui:define>
+
+            <ui:define name="navigacija">         
+                <li><h:link outcome="/admin/korisnici.xhtml" value="#{m.navigacija_korisnici}"/></li>
+                <li><h:link outcome="/admin/pregledEmailPoruka.xhtml" value="#{m.navigacija_emailPoruke}"/></li>
+                <li><h:link outcome="/admin/upravljanjeCjenikom.xhtml" value="#{m.navigacija_upravljanjeCjenikom}"/></li>
+            </ui:define>
+
+            <ui:define name="sadrzaj">
+                <h1>#{m.dnevnikRada_naslov}</h1>
+                <fieldset>
+                    <h:form id="forma">
+                        <article>
+                            <p:dataTable id="tablicaPodaciDnevnik" value="#{pregledDnevnika.zapisiDnevnika}" var="z"
+                                         rows="10" paginator="true" rowsPerPageTemplate="10,20,50"
+                                         paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+                                         emptyMessage="#{m.dnevnikRada_tablicaNemaPodataka}"
+                                         widgetVar="dnevnikTable">
+                                <p:column filterBy="#{z.idDnevnik}" headerText="#{m.dnevnikRada_tablicaId}"
+                                          footerText="sadrži broj" filterMatchMode="contains">
+                                    #{z.idDnevnik}
+                                </p:column>
+                                <p:column filterBy="#{z.korisnik.korisnickoIme}" headerText="#{m.dnevnikRada_tablicaKorisnik}" 
+                                          footerText="sadrži slova" filterMatchMode="contains">
+                                    #{z.korisnik.korisnickoIme}
+                                </p:column>
+                                <p:column filterBy="#{z.url}" headerText="#{m.dnevnikRada_tablicaURL}" 
+                                          footerText="sadrži slova" filterMatchMode="contains">
+                                    #{z.url}
+                                </p:column>
+                                <p:column filterBy="#{z.ipadresa}" headerText="#{m.dnevnikRada_tablicaIPAdresa}" 
+                                          footerText="sadrži brojeve" filterMatchMode="contains">
+                                    #{z.ipadresa}
+                                </p:column>
+                                <p:column filterBy="#{z.vrijeme}" headerText="#{m.dnevnikRada_tablicaDatum}" 
+                                          footerText="sadrži" filterMatchMode="contains">
+                                    #{z.vrijeme}
+                                </p:column>
+                                <p:column filterBy="#{z.trajanje}" headerText="#{m.dnevnikRada_tablicaTrajanje}" 
+                                          footerText="sadrži" filterMatchMode="contains">
+                                    #{z.trajanje}
+                                </p:column>
+                                <p:column filterBy="#{z.status}" headerText="#{m.dnevnikRada_tablicaStatus}" 
+                                          footerText="sadrži" filterMatchMode="contains">
+                                    #{z.status}
+                                </p:column>
+                            </p:dataTable>
+
+                        </article>
+
+                    </h:form>
+                </fieldset>
+            </ui:define>
+        </ui:composition>
+    </f:view>
+</html>
+

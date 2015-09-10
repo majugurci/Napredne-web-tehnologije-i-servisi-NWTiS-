@@ -1,0 +1,200 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package org.foi.nwtis.majugurci.ejb;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+import javax.ejb.LocalBean;
+import javax.ejb.Singleton;
+import org.foi.nwtis.majugurci.web.podaci.PodaciDodanaAdresa;
+import org.foi.nwtis.majugurci.web.slusaci.PodaciObrade;
+import org.foi.nwtis.majugurci.podaci.PodaciOmotac;
+
+/**
+ *
+ * @author Mario
+ */
+@Singleton
+@LocalBean
+public class SpremisteJMSPoruka {
+
+    private String server;
+    private int port;
+    private String datotekaSerijalizacije;
+
+    private List<PodaciDodanaAdresa> adrese;
+    private List<PodaciObrade> mailPoruke;
+    
+    private boolean imaNovihPoruka = false;
+
+    // Add business logic below. (Right-click in editor and choose
+    // "Insert Code > Add Business Method")
+    public void SpremisteJMSPoruka() {
+
+    }
+
+    public void init(String server, int port, String datSerijalizacije) {
+        this.server = server;
+        this.port = port;
+        this.datotekaSerijalizacije = datSerijalizacije;
+    }
+    
+    public PodaciOmotac dajNovePoruke() {
+        if (imaNovihPoruka) {
+            PodaciOmotac po = new PodaciOmotac();
+            po.setAdrese(adrese);
+            po.setMailPoruke(mailPoruke);
+            imaNovihPoruka = false;
+            return po;
+        } else {
+            return null;
+        }
+    }
+
+    public void ucitajSerijalizaciju() {
+        //ucitaj serijalizaciju
+        File f = new File(datotekaSerijalizacije);
+        if (!f.isFile()) {
+            //serijalizacija ne postoji, stvori prazne liste podataka
+            adrese = new ArrayList<>();
+            mailPoruke = new ArrayList<>();
+        } else {
+            System.out.println("Učitavam serijalizaciju");
+            ObjectInputStream is;
+            PodaciOmotac po;
+            try {
+                is = new ObjectInputStream(new FileInputStream(datotekaSerijalizacije));
+                po = (PodaciOmotac) is.readObject();
+                adrese = po.getAdrese();
+                mailPoruke = po.getMailPoruke();
+            } catch (FileNotFoundException ex) {
+                Logger.getLogger(SpremisteJMSPoruka.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (IOException | ClassNotFoundException ex) {
+                Logger.getLogger(SpremisteJMSPoruka.class.getName()).log(Level.SEVERE, null, ex);
+            }
+
+            //ako je spremljena prazna serijalizacija instanciraj liste
+            if (adrese == null) {
+                adrese = new ArrayList<>();
+            }
+            if (mailPoruke == null) {
+                mailPoruke = new ArrayList<>();
+            }
+        }
+    }
+
+    public void serijalizirajEvideniciju() {
+        //spremi serijalizaciju
+        File f = new File(datotekaSerijalizacije);
+        if (!f.isFile()) {
+            //ako datoteka serijalizacije ne postoji, stvori novu
+            try {
+                f.createNewFile();
+                System.out.println(f.getAbsolutePath());
+            } catch (IOException ex) {
+                Logger.getLogger(SpremisteJMSPoruka.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        } else {
+            System.out.println(f.getAbsolutePath());
+        }
+        System.out.println("Spremam serijalizaciju");
+        PodaciOmotac po = new PodaciOmotac();
+        po.setAdrese(adrese);
+        po.setMailPoruke(mailPoruke);
+        try {
+            ObjectOutputStream os1 = new ObjectOutputStream(new FileOutputStream(datotekaSerijalizacije));
+            os1.writeObject(po);
+            os1.close();
+        } catch (IOException ex) {
+            Logger.getLogger(SpremisteJMSPoruka.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
+    }
+
+    public void dodajAdresePoruku(PodaciDodanaAdresa adresa) {
+        adrese.add(adresa);
+    }
+
+    public void dodajMailPoruku(PodaciObrade obrada) {
+        mailPoruke.add(obrada);
+    }
+
+    public void obrisiAdresePoruke(List<PodaciDodanaAdresa> adrese) {
+        if (adrese == this.adrese) {
+            //ako se brišu sve poruke
+            this.adrese.clear();
+        } else {
+            //ako se brišu samo neke poruke
+            for (PodaciDodanaAdresa a : adrese) {
+                this.adrese.remove(a);
+            }
+        }
+    }
+
+    public void obrisiMailPoruke(List<PodaciObrade> mail) {
+        if (mail == mailPoruke) {
+            //ako se brišu sve poruke
+            mailPoruke.clear();
+        } else {
+            //ako se brišu samo neke poruke
+            for (PodaciObrade m : mail) {
+                mailPoruke.remove(m);
+            }
+        }
+    }
+
+    public List<PodaciDodanaAdresa> getAdrese() {
+        return adrese;
+    }
+
+    public void setAdrese(List<PodaciDodanaAdresa> adrese) {
+        this.adrese = adrese;
+    }
+
+    public List<PodaciObrade> getMailPoruke() {
+        return mailPoruke;
+    }
+
+    public void setMailPoruke(List<PodaciObrade> mailPoruke) {
+        this.mailPoruke = mailPoruke;
+    }
+
+    public String getServer() {
+        return server;
+    }
+
+    public void setServer(String server) {
+        this.server = server;
+    }
+
+    public int getPort() {
+        return port;
+    }
+
+    public void setPort(int port) {
+        this.port = port;
+    }
+
+    public boolean isImaNovihPoruka() {
+        return imaNovihPoruka;
+    }
+
+    public void setImaNovihPoruka(boolean imaNovihPoruka) {
+        this.imaNovihPoruka = imaNovihPoruka;
+    }
+
+}

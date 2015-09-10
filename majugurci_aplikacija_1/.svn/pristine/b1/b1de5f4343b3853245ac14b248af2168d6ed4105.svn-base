@@ -1,0 +1,151 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package org.foi.nwtis.majugurci.rest.klijenti;
+
+import java.util.Date;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.MediaType;
+import org.codehaus.jettison.json.JSONException;
+import org.codehaus.jettison.json.JSONObject;
+import org.foi.nwtis.majugurci.web.podaci.MeteoPodaci;
+import org.foi.nwtis.majugurci.web.podaci.MeteoPrognoza;
+
+/**
+ *
+ * @author Mario
+ */
+public class OWMKlijent {
+
+    String apiKey;
+    OWMRESTHelper helper;
+    Client client;
+
+    public OWMKlijent(String apiKey) {
+        this.apiKey = apiKey;
+        helper = new OWMRESTHelper(apiKey);
+        client = ClientBuilder.newClient();
+    }
+
+    public MeteoPodaci getRealTimeWeather(String latitude, String longitude) {
+        WebTarget webResource = client.target(OWMRESTHelper.getOWM_BASE_URI())
+                .path(OWMRESTHelper.getOWM_Current_Path());
+        webResource = webResource.queryParam("lat", latitude);
+        webResource = webResource.queryParam("lon", longitude);
+        webResource = webResource.queryParam("lang", "hr");
+        webResource = webResource.queryParam("units", "metric");
+        webResource = webResource.queryParam("APIKEY", apiKey);
+
+        String odgovor = webResource.request(MediaType.APPLICATION_JSON).get(String.class);
+        try {
+            JSONObject jo = new JSONObject(odgovor);
+            MeteoPodaci mp = new MeteoPodaci();
+            mp.setSunRise(new Date(jo.getJSONObject("sys").getLong("sunrise") * 1000));
+            mp.setSunSet(new Date(jo.getJSONObject("sys").getLong("sunset") * 1000));
+
+            mp.setTemperatureValue(Float.parseFloat(jo.getJSONObject("main").getString("temp")));
+            mp.setTemperatureMin(Float.parseFloat(jo.getJSONObject("main").getString("temp_min")));
+            mp.setTemperatureMax(Float.parseFloat(jo.getJSONObject("main").getString("temp_max")));
+            mp.setTemperatureUnit("celsius");
+
+            mp.setHumidityValue(Float.parseFloat(jo.getJSONObject("main").getString("humidity")));
+            mp.setHumidityUnit("%");
+
+            mp.setPressureValue(Float.parseFloat(jo.getJSONObject("main").getString("pressure")));
+            mp.setPressureUnit("hPa");
+
+            mp.setWindSpeedValue(Float.parseFloat(jo.getJSONObject("wind").getString("speed")));
+            mp.setWindSpeedName("");
+
+            mp.setWindDirectionValue(Float.parseFloat(jo.getJSONObject("wind").getString("deg")));
+            mp.setWindDirectionCode("");
+            mp.setWindDirectionName("");
+
+            mp.setCloudsValue(jo.getJSONObject("clouds").getInt("all"));
+            mp.setCloudsName(jo.getJSONArray("weather").getJSONObject(0).getString("description"));
+            mp.setPrecipitationMode("");
+
+            mp.setWeatherNumber(jo.getJSONArray("weather").getJSONObject(0).getInt("id"));
+            mp.setWeatherValue(jo.getJSONArray("weather").getJSONObject(0).getString("description"));
+            mp.setWeatherIcon(jo.getJSONArray("weather").getJSONObject(0).getString("icon"));
+
+            mp.setLastUpdate(new Date(jo.getLong("dt") * 1000));
+
+            return mp;
+
+        } catch (JSONException ex) {
+            Logger.getLogger(OWMKlijent.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return null;
+    }
+
+    public MeteoPrognoza[] getWeatherForecast(String adresa, String latitude, String longitude, int noDays) {
+        MeteoPrognoza[] mpr = new MeteoPrognoza[noDays];
+
+        WebTarget webResource = client.target(OWMRESTHelper.getOWM_BASE_URI())
+                .path(OWMRESTHelper.getOWM_ForecastDaily_Path());
+        
+        webResource = webResource.queryParam("lat", latitude);
+        webResource = webResource.queryParam("lon", longitude);
+        webResource = webResource.queryParam("lang", "hr");
+        webResource = webResource.queryParam("units", "metric");
+        webResource = webResource.queryParam("APIKEY", apiKey);
+        webResource = webResource.queryParam("cnt", noDays);
+        webResource = webResource.queryParam("mode", "json");
+
+        String odgovor = webResource.request(MediaType.APPLICATION_JSON).get(String.class);
+
+        try {
+            JSONObject jo = new JSONObject(odgovor);
+
+            for (int i = 0; i < noDays; i++) {
+
+                MeteoPodaci mp = new MeteoPodaci();
+
+                mp.setSunRise(null);
+                mp.setSunSet(null);
+
+                mp.setTemperatureMin(Float.parseFloat(jo.getJSONArray("list").getJSONObject(i).getJSONObject("temp").getString("min")));
+                mp.setTemperatureMax(Float.parseFloat(jo.getJSONArray("list").getJSONObject(i).getJSONObject("temp").getString("max")));
+
+                //buduci da nema prosjecne temperature odlucio sam je sam izracunati kao prosjek najvece i najnize
+                mp.setTemperatureValue((mp.getTemperatureMin() + mp.getTemperatureMax()) / 2);
+                mp.setTemperatureUnit("celsius");
+
+                mp.setHumidityValue(Float.parseFloat(jo.getJSONArray("list").getJSONObject(i).getString("humidity")));
+                mp.setHumidityUnit("%");
+
+                mp.setPressureValue(Float.parseFloat(jo.getJSONArray("list").getJSONObject(i).getString("pressure")));
+                mp.setPressureUnit("hPa");
+
+                mp.setWindSpeedValue(Float.parseFloat(jo.getJSONArray("list").getJSONObject(i).getString("speed")));
+                mp.setWindSpeedName("");
+
+                mp.setWindDirectionValue(Float.parseFloat(jo.getJSONArray("list").getJSONObject(i).getString("deg")));
+                mp.setWindDirectionCode("");
+                mp.setWindDirectionName("");
+
+                mp.setWeatherNumber(jo.getJSONArray("list").getJSONObject(i).getJSONArray("weather").getJSONObject(0).getInt("id"));
+                mp.setWeatherValue(jo.getJSONArray("list").getJSONObject(i).getJSONArray("weather").getJSONObject(0).getString("description"));
+                mp.setWeatherIcon(jo.getJSONArray("list").getJSONObject(i).getJSONArray("weather").getJSONObject(0).getString("icon"));
+
+                mp.setLastUpdate(new Date(jo.getJSONArray("list").getJSONObject(i).getLong("dt")*1000));
+                
+                MeteoPrognoza metPro = new MeteoPrognoza(adresa, i+1, mp);
+                
+                mpr[i] = metPro;
+            }
+
+        } catch (JSONException ex) {
+            Logger.getLogger(OWMKlijent.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
+        return mpr;
+    }
+}

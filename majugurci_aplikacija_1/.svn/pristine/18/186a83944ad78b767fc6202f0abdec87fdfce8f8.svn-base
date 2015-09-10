@@ -1,0 +1,20 @@
+<%-- 
+    Document   : index
+    Created on : May 29, 2015, 7:19:54 PM
+    Author     : Mario
+--%>
+
+<%@page contentType="text/html" pageEncoding="UTF-8"%>
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <title>Početna</title>
+    </head>
+    <body>
+        <h1>Početna stranica</h1>
+        <a href="${pageContext.servletContext.contextPath}/Kontroler">Kontroler</a><br>
+        <a href="${pageContext.servletContext.contextPath}/PrijavaKorisnika">PrijavaKorisnika</a><br>
+        <a href="${pageContext.servletContext.contextPath}/OdjavaKorisnika">OdjavaKorisnika</a><br>
+    </body>
+</html>

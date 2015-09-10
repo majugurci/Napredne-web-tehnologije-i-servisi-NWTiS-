@@ -1,0 +1,131 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="http://xmlns.jcp.org/jsf/html"
+      xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+      xmlns:p="http://primefaces.org/ui"
+      xmlns:f="http://xmlns.jcp.org/jsf/core">
+
+    <ui:composition template="/predlozak.xhtml">
+
+        <ui:define name="naslov">
+            Početna
+        </ui:define>
+
+        <ui:define name="sadrzaj">
+            <h1>Početna</h1>
+                <fieldset>
+                    <h:form id="forma">
+                        <article>
+                            <p>Pregled JMS adresa poruka</p>
+                            
+                            <p:dataTable value="#{index.adrese}" var="p"
+                                         rows="10" paginator="true" rowsPerPageTemplate="10,20,50"
+                                         paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+                                         paginatorPosition="bottom"
+                                         emptyMessage="Nema JMS poruka"
+                                         style="margin-top: 30px;"
+                                         selection="#{index.odabraneAdrese}" rowKey="#{p.id}">
+
+                                <f:facet name="header">
+                                    Obriši
+                                </f:facet>
+                                <p:column selectionMode="multiple" style="width:16px;text-align:center"/>
+
+                                <p:column headerText="Id">
+                                    #{p.id}
+                                </p:column>
+
+                                <p:column headerText="Adresa">
+                                    #{p.adresa}
+                                </p:column>
+
+                                <p:column headerText="Korisnik">
+                                    #{p.korisnik}
+                                </p:column>
+
+                                <p:column headerText="Lozinka">
+                                    #{p.lozinka}
+                                </p:column>
+
+                            </p:dataTable>
+                            <br/>
+                            <h:inputHidden id="obrisiPorukeAdrese" value="obrisiPorukeAdrese"/>
+                            <h:message style="color: red; font-style: oblique;"
+                                       for="obrisiPorukeAdrese"/>
+                            <h:inputHidden id="obrisiSvePorukeAdrese" value="obrisiSvePorukeAdrese"/>
+                            <h:message style="color: red; font-style: oblique;"
+                                       for="obrisiSvePorukeAdrese"/>
+                            <br/>
+                            <h:commandButton value="Obriši odabrane poruke" 
+                                             id="obrisiAdresePoruke" action="#{index.obirisiAdresePoruke}" styleClass="formbutton">
+                                <f:ajax execute="@all" render="forma"/>
+                            </h:commandButton>
+                            <h:commandButton value="Obriši sve poruke" 
+                                             id="obrisiSveAdresePoruke" action="#{index.obirisiSveAdresePoruke}" styleClass="formbutton">
+                                <f:ajax execute="@all" render="forma"/>
+                            </h:commandButton>
+                            <br/>
+                        </article>
+
+                        <article>
+                            <p>Pregled JMS mail poruka</p>
+                            
+                            <p:dataTable value="#{index.mailPoruke}" var="m"
+                                         rows="10" paginator="true" rowsPerPageTemplate="10,20,50"
+                                         paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+                                         paginatorPosition="bottom"
+                                         emptyMessage="Nema JMS poruka"
+                                         style="margin-top: 30px;"
+                                         selection="#{index.odabraneEmailPoruke}" rowKey="#{m.id}">
+
+                                <f:facet name="header">
+                                    Obriši
+                                </f:facet>
+                                <p:column selectionMode="multiple" style="width:16px;text-align:center"/>
+
+                                <p:column headerText="Id">
+                                    #{m.id}
+                                </p:column>
+
+                                <p:column headerText="Početak obrade">
+                                    #{m.pocetakObrade}
+                                </p:column>
+
+                                <p:column headerText="Kraj obrade">
+                                    #{m.krajObrade}
+                                </p:column>
+
+                                <p:column headerText="Br. pročitanih poruka">
+                                    #{m.brojProcitanihPoruka}
+                                </p:column>
+                                
+                                <p:column headerText="Br. NWTiS poruka">
+                                    #{m.brojNWTiSPoruka}
+                                </p:column>
+
+                            </p:dataTable>
+                            <br/>
+                            <h:inputHidden id="obrisiPorukeMail" value="obrisiPorukeMail"/>
+                            <h:message style="color: red; font-style: oblique;"
+                                       for="obrisiPorukeMail"/>
+                            <h:inputHidden id="obrisiSvePorukeMail" value="obrisiSvePorukeMail"/>
+                            <h:message style="color: red; font-style: oblique;"
+                                       for="obrisiSvePorukeMail"/>
+                            <br/>
+                            <h:commandButton value="Obriši odabrane poruke" 
+                                             id="obrisiMailPoruke" action="#{index.obirisiMailPoruke}" styleClass="formbutton">
+                                <f:ajax execute="@all" render="forma"/>
+                            </h:commandButton>
+                            
+                            <h:commandButton value="Obriši sve poruke" 
+                                             id="obrisiSveMailPoruke" action="#{index.obirisiSveMailPoruke}" styleClass="formbutton">
+                                <f:ajax execute="@all" render="forma"/>
+                            </h:commandButton>
+                        </article>
+                    </h:form>
+                </fieldset>
+        </ui:define>
+    </ui:composition>
+</html>
+

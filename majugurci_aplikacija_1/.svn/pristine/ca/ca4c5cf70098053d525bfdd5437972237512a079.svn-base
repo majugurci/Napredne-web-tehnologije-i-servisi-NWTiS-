@@ -1,0 +1,26 @@
+<%-- 
+    Document   : index
+    Created on : May 31, 2015, 3:06:33 PM
+    Author     : Mario
+--%>
+
+<%@page contentType="text/html" pageEncoding="UTF-8"%>
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <title>Početna</title>
+    </head>
+    <body>
+        <%
+            request.setCharacterEncoding("UTF-8");
+            response.setCharacterEncoding("UTF-8");
+        %>
+
+
+        Dobrodošli: ${sessionScope.korisnik.korisnickoIme} <br/><br/>
+        <a href="${pageContext.servletContext.contextPath}/OdjavaKorisnika">OdjavaKorisnika</a><br>
+        <a href="${pageContext.servletContext.contextPath}/PregledFinancija">Financijski podaci</a><br>
+        <a href="${pageContext.servletContext.contextPath}/PregledZahtjeva">Pregled zahtjeva</a><br>
+    </body>
+</html>

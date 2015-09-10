@@ -1,0 +1,52 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:f="http://xmlns.jcp.org/jsf/core"
+      xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+      xmlns:h="http://xmlns.jcp.org/jsf/html">
+
+        <f:metadata>
+            <f:event type="preRenderView" listener="#{lokalizacija.init}"/>
+        </f:metadata>
+
+        <ui:composition template="./predlozak.xhtml">
+
+            <ui:define name="naslov">
+                #{m.indexOdabirAkcije_naslov}
+            </ui:define>
+
+            <ui:define name="navigacija">
+                <h:panelGroup rendered="#{empty korisnik}">
+                    <li><h:link outcome="login.xhtml" value="#{m.navigacija_prijava}" /></li>
+                    <li><h:link outcome="register.xhtml" value="#{m.navigacija_registracija}" /><br/></li>
+                </h:panelGroup>
+                <h:panelGroup rendered="#{not empty korisnik}">
+                    <li><h:link outcome="/privatno/nadopuniPodatke.xhtml" value="#{m.navigacija_nadopunaPodataka}"/></li>
+                    <li><h:link outcome="/privatno/pregledAdreseMeteo.xhtml" value="#{m.navigacija_adreseMeteoPodaci}"/></li>
+                </h:panelGroup>
+                <h:panelGroup rendered="#{korisnik.grupaOpis eq 'admin'}">
+                    <li><h:link outcome="/admin/korisnici.xhtml" value="#{m.navigacija_korisnici}"/></li>
+                    <li><h:link outcome="/admin/pregledEmailPoruka.xhtml" value="#{m.navigacija_emailPoruke}"/></li>
+                    <li><h:link outcome="/admin/dnevnikRada.xhtml" value="#{m.navigacija_dnevnikRada}"/></li>
+                    <li><h:link outcome="/admin/upravljanjeCjenikom.xhtml" value="#{m.navigacija_upravljanjeCjenikom}"/></li>
+                </h:panelGroup>
+            </ui:define>
+
+            <ui:define name="sadrzaj">
+                <h1>#{m.indexOdabirAkcije_naslov}</h1>
+
+                <article>
+
+                    <p>#{m.indexOdabirAkcije_opisStranice}</p>
+
+                    <h:panelGroup rendered="#{empty korisnik}">
+                        <p>#{m.indexOdabirAkcije_dodatniOpisStranice}</p>
+                    </h:panelGroup>
+
+
+                    <h:messages globalOnly="true" infoStyle="color:darkgreen" errorStyle="color:darkred"/>
+                </article>
+            </ui:define>
+        </ui:composition>
+</html>
+

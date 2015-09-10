@@ -1,0 +1,29 @@
+.button {
+    width: 615px;
+}
+
+label {
+    display: block;
+    width: 100px;
+}
+
+input {
+    width: 500px;
+}
+
+.tablica {
+    border: 1px solid;
+    width: 615px;
+}
+.zaglavlje {
+    background-color: moccasin;
+}
+.parni {
+    background-color: oldlace;    
+    text-indent: 5px;
+}
+.neparni {
+    background-color: whitesmoke;
+    text-indent: 5px;
+}
+

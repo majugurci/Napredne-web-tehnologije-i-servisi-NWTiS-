@@ -1,0 +1,23 @@
+<%-- 
+    Document   : login
+    Created on : May 29, 2015, 8:23:40 PM
+    Author     : Mario
+--%>
+
+<%@page contentType="text/html" pageEncoding="UTF-8"%>
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <title>Prijava korisnika</title>
+    </head>
+    <body>
+        <form method="POST" action="${pageContext.servletContext.contextPath}/ProvjeraKorisnika">
+            <label for="korinik">Korisničko ime:</label>
+            <input id="korisnik" name="korisnik"/><br>
+            <label for="lozinka">Lozinka:</label>
+            <input id="lozinka" name="lozinka" type="password"/><br>
+            <input name="akcija" value=" Prijavi se " type="submit"/>
+        </form>
+    </body>
+</html>

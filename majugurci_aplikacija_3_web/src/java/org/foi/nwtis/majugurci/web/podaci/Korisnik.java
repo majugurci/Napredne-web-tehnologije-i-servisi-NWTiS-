@@ -1,0 +1,93 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package org.foi.nwtis.majugurci.web.podaci;
+
+/**
+ *
+ * @author Mario
+ */
+public class Korisnik {
+    
+    private int idKorisnika;
+    private int grupa;
+    private String grupaOpis;
+    private String korisnickoIme;
+    private String lozinka;
+    private String email;
+    private String vrijemeRegistracije;
+
+    public Korisnik() {
+    }
+
+    public Korisnik(int idKorisnika, int grupa, String grupaOpis, String korisnickoIme, String lozinka, String email, String vrijemeRegistracije) {
+        this.idKorisnika = idKorisnika;
+        this.grupa = grupa;
+        this.grupaOpis = grupaOpis;
+        this.korisnickoIme = korisnickoIme;
+        this.lozinka = lozinka;
+        this.email = email;
+        this.vrijemeRegistracije = vrijemeRegistracije;
+    }
+
+    public int getIdKorisnika() {
+        return idKorisnika;
+    }
+
+    public void setIdKorisnika(int idKorisnika) {
+        this.idKorisnika = idKorisnika;
+    }
+
+    public int getGrupa() {
+        return grupa;
+    }
+
+    public void setGrupa(int grupa) {
+        this.grupa = grupa;
+    }
+
+    public String getKorisnickoIme() {
+        return korisnickoIme;
+    }
+
+    public void setKorisnickoIme(String korisnickoIme) {
+        this.korisnickoIme = korisnickoIme;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getVrijemeRegistracije() {
+        return vrijemeRegistracije;
+    }
+
+    public void setVrijemeRegistracije(String vrijemeRegistracije) {
+        this.vrijemeRegistracije = vrijemeRegistracije;
+    }
+
+    public String getGrupaOpis() {
+        return grupaOpis;
+    }
+
+    public void setGrupaOpis(String grupaOpis) {
+        this.grupaOpis = grupaOpis;
+    }
+
+    public String getLozinka() {
+        return lozinka;
+    }
+
+    public void setLozinka(String lozinka) {
+        this.lozinka = lozinka;
+    }
+    
+    
+    
+}

@@ -1,0 +1,208 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="http://xmlns.jcp.org/jsf/html"
+      xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+      xmlns:p="http://primefaces.org/ui"
+      xmlns:f="http://xmlns.jcp.org/jsf/core">
+
+    <ui:composition template="/predlozak.xhtml">
+        
+        <ui:define name="biblioteke">
+            <h:outputScript library="js" name="websocket.js"/>
+        </ui:define>
+
+        <ui:define name="naslov">
+            Početna
+        </ui:define>
+
+        <ui:define name="sadrzaj">
+            <h1>Početna</h1>
+            <fieldset>
+                <h:form id="forma">
+                    
+                    <!-- ovaj dio služi za prikaz poruke prilikom ajax učitavanja 
+                    kako bi korisnik znao da se nešto događa -->
+                    <p:ajaxStatus onstart="PF('statusDialog').show()" onsuccess="PF('statusDialog').hide()" />
+                    <p:dialog widgetVar="statusDialog" modal="true" draggable="false" closable="false" resizable="false" showHeader="false">
+                        <h:outputLabel style="margin-left: 25%;" value="#{m.pregledAdresa_ajaxPorukaUcitavanje}"/><br/>
+                        <p:graphicImage name="ajax-loader.gif" />
+                    </p:dialog>
+
+                    <article>
+                        <p>Kreiraj novog korisnika</p>
+
+                        <h:inputHidden id="zaGreskuDodajKorisnika"/>
+                        <h:message for="zaGreskuDodajKorisnika" 
+                                   style="color: red; font-style: oblique;"/>
+                        <h:inputHidden id="zaOdgovorServera"/>
+                        <h:message for="zaOdgovorServera" 
+                                   style="color: blue; font-style: oblique;"/>
+                        <br/>
+                        <h:panelGrid columns="2">
+                            <h:outputLabel value="Korisničko ime: "/>
+                            <h:inputText value="#{index.korisnickoIme}"/>
+                            <h:outputLabel value="Lozinka: "/>
+                            <h:inputText value="#{index.lozinka}"/>
+                        </h:panelGrid>
+                        <br/>
+                        <h:commandButton value="Dodaj korisnika" 
+                                         action="#{index.dodajNovogKorisnika}"
+                                         class="formbutton" />
+
+                    </article>
+
+                    <article>
+                        <p>Pregled JMS adresa poruka</p>
+
+                        <p:dataTable value="#{index.adrese}" var="p"
+                                     rows="10" paginator="true" rowsPerPageTemplate="10,20,50"
+                                     paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+                                     paginatorPosition="bottom"
+                                     emptyMessage="Nema JMS poruka"
+                                     style="margin-top: 30px;"
+                                     selection="#{index.odabraneAdrese}" rowKey="#{p.id}">
+
+
+                            <p:column selectionMode="multiple" style="width:16px;text-align:center"/>
+
+                            <p:column headerText="Id">
+                                #{p.id}
+                            </p:column>
+
+                            <p:column headerText="Adresa">
+                                #{p.adresa}
+                            </p:column>
+
+                            <p:column headerText="Korisnik">
+                                #{p.korisnik}
+                            </p:column>
+
+                            <p:column headerText="Lozinka">
+                                #{p.lozinka}
+                            </p:column>
+
+                        </p:dataTable>
+                        <br/>
+                        <h:inputHidden id="obrisiPorukeAdrese" value="obrisiPorukeAdrese"/>
+                        <h:message style="color: red; font-style: oblique;"
+                                   for="obrisiPorukeAdrese"/>
+                        <h:inputHidden id="obrisiSvePorukeAdrese" value="obrisiSvePorukeAdrese"/>
+                        <h:message style="color: red; font-style: oblique;"
+                                   for="obrisiSvePorukeAdrese"/>
+                        <br/>
+                        <h:commandButton value="Obriši odabrane poruke" 
+                                         id="obrisiAdresePoruke" action="#{index.obirisiAdresePoruke}" styleClass="formbutton">
+                            <f:ajax execute="@all" render="forma"/>
+                        </h:commandButton>
+                        <h:commandButton value="Obriši sve poruke" 
+                                         id="obrisiSveAdresePoruke" action="#{index.obirisiSveAdresePoruke}" styleClass="formbutton">
+                            <f:ajax execute="@all" render="forma"/>
+                        </h:commandButton>
+                        <br/>
+                    </article>
+
+                    <article>
+                        <p>Pregled JMS mail poruka</p>
+
+                        <p:dataTable value="#{index.mailPoruke}" var="m"
+                                     rows="10" paginator="true" rowsPerPageTemplate="10,20,50"
+                                     paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+                                     paginatorPosition="bottom"
+                                     emptyMessage="Nema JMS poruka"
+                                     style="margin-top: 30px;"
+                                     selection="#{index.odabraneEmailPoruke}" rowKey="#{m.id}">
+
+                            <p:column selectionMode="multiple" style="width:16px;text-align:center"/>
+
+                            <p:column headerText="Id">
+                                #{m.id}
+                            </p:column>
+
+                            <p:column headerText="Početak obrade">
+                                #{m.pocetakObrade}
+                            </p:column>
+
+                            <p:column headerText="Kraj obrade">
+                                #{m.krajObrade}
+                            </p:column>
+
+                            <p:column headerText="Br. pročitanih poruka">
+                                #{m.brojProcitanihPoruka}
+                            </p:column>
+
+                            <p:column headerText="Br. NWTiS poruka">
+                                #{m.brojNWTiSPoruka}
+                            </p:column>
+
+                            <p:column style="width:64px;text-align: center" headerText="Dodani korisnici">
+                                <p:commandButton update=":forma:porukaDetaljiDodani" 
+                                                 oncomplete="PF('porukaDialog1').show()" icon="ui-icon-search" title="Dodani korisnici">
+                                    <f:setPropertyActionListener value="#{m}" target="#{index.odabranaMailPorukaPregled}" />
+                                </p:commandButton>
+                            </p:column>
+
+                            <p:column style="width:64px;text-align: center" headerText="Neuspješni korisnici">
+                                <p:commandButton update=":forma:porukaDetaljiNeuspjesni" 
+                                                 oncomplete="PF('porukaDialog2').show()" icon="ui-icon-search" title="Neuspješni korisnici">
+                                    <f:setPropertyActionListener value="#{m}" target="#{index.odabranaMailPorukaPregledNeuspjeh}" />
+                                </p:commandButton>
+                            </p:column>
+
+                        </p:dataTable>
+                        <br/>
+                        <h:inputHidden id="obrisiPorukeMail" value="obrisiPorukeMail"/>
+                        <h:message style="color: red; font-style: oblique;"
+                                   for="obrisiPorukeMail"/>
+                        <h:inputHidden id="obrisiSvePorukeMail" value="obrisiSvePorukeMail"/>
+                        <h:message style="color: red; font-style: oblique;"
+                                   for="obrisiSvePorukeMail"/>
+                        <br/>
+                        <h:commandButton value="Obriši odabrane poruke" 
+                                         id="obrisiMailPoruke" action="#{index.obirisiMailPoruke}" styleClass="formbutton">
+                            <f:ajax execute="@all" render="forma"/>
+                        </h:commandButton>
+
+                        <h:commandButton value="Obriši sve poruke" 
+                                         id="obrisiSveMailPoruke" action="#{index.obirisiSveMailPoruke}" styleClass="formbutton">
+                            <f:ajax execute="@all" render="forma"/>
+                        </h:commandButton>
+
+                        <p:dialog header="Dodani korisnici" widgetVar="porukaDialog1" modal="true" showEffect="fade" hideEffect="fade" resizable="false">
+                            <p:outputPanel id="porukaDetaljiDodani" style="text-align:center;">
+                                <p:panelGrid  columns="1" rendered="#{not empty index.odabranaMailPorukaPregled}" columnClasses="label,value">
+
+                                    <ui:repeat value="#{index.odabranaMailPorukaPregled.dodaniKorisnici}" var="value"
+                                               rendered="#{not empty index.odabranaMailPorukaPregled.dodaniKorisnici}">
+                                        #{value} <br />
+                                    </ui:repeat>
+
+                                    <h:panelGroup rendered="#{empty index.odabranaMailPorukaPregled.dodaniKorisnici}">
+                                        Niti jedan korisnik nije dodan.
+                                    </h:panelGroup>
+                                </p:panelGrid>
+                            </p:outputPanel>
+                        </p:dialog>
+
+                        <p:dialog header="Neuspješni korisnici" widgetVar="porukaDialog2" modal="true" showEffect="fade" hideEffect="fade" resizable="false">
+                            <p:outputPanel id="porukaDetaljiNeuspjesni" style="text-align:center;">
+                                <p:panelGrid  columns="1" rendered="#{not empty index.odabranaMailPorukaPregledNeuspjeh}" columnClasses="label,value">
+
+                                    <ui:repeat value="#{index.odabranaMailPorukaPregledNeuspjeh.neuspjesniKorisnici}" var="value"
+                                               rendered="#{not empty index.odabranaMailPorukaPregledNeuspjeh.neuspjesniKorisnici}">
+                                        #{value} <br />
+                                    </ui:repeat>
+
+                                    <h:panelGroup rendered="#{empty index.odabranaMailPorukaPregledNeuspjeh.neuspjesniKorisnici}">
+                                        Nije korisnika kod kojih je dodavanje bilo neuspješno.
+                                    </h:panelGroup>
+                                </p:panelGrid>
+                            </p:outputPanel>
+                        </p:dialog>
+                    </article>
+                </h:form>
+            </fieldset>
+        </ui:define>
+    </ui:composition>
+</html>
+

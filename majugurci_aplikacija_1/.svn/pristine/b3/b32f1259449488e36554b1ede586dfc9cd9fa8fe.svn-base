@@ -1,0 +1,88 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package org.foi.nwtis.majugurci.socketServer;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.Socket;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import org.foi.nwtis.majugurci.konfiguracije.bp.BP_Konfiguracija;
+
+/**
+ *
+ * @author Mario
+ */
+public class ServerObradaDretva extends Thread {
+
+    private final MeteoPodaciDretva mpd;
+    private final BP_Konfiguracija konfig_BP;
+    private final Socket socket;
+
+    private final String sintaksa2Provjera = "^USER ([\\w-_]+); PASSWD ([\\w-_#!]+);$";
+    private final String sintaksa2Dodavanje = "^ADD ([\\w-_]+); PASSWD ([\\w-_#!]+);$";
+    private final String sintaksa3AdminPause = "^USER ([\\w-_]+); PASSWD ([\\w-_#!]+); PAUSE;$";
+    private final String sintaksa3AdminStart = "^USER ([\\w-_]+); PASSWD ([\\w-_#!]+); START;$";
+    private final String sintaksa3AdminStop = "^USER ([\\w-_]+); PASSWD ([\\w-_#!]+); STOP;$";
+    private final String sintaksa3AdminAdmin = "^USER ([\\w-_]+); PASSWD ([\\w-_#!]+); ADMIN ([\\w-_]+);$";
+    private final String sintaksa3AdminNoAdmin = "^USER ([\\w-_]+); PASSWD ([\\w-_#!]+); NOADMIN ([\\w-_]+);$";
+    private final String sintaksa3AdminDownload = "^USER ([\\w-_]+); PASSWD ([\\w-_#!]+); DOWNLOAD;$";
+    private final String sintaksa3UserTest = "^USER ([\\w-_]+); PASSWD ([\\w-_#!]+); TEST \"([^\"]+)\";$";
+    private final String sintaksa3UserGet = "^USER ([\\w-_]+); PASSWD ([\\w-_#!]+); GET \"([^\"]+)\";$";
+    private final String sintaksa3UserType = "^USER ([\\w-_]+); PASSWD ([\\w-_#!]+); TYPE;$";
+    private final String sintaksa4AdminUpload = "^USER ([\\w-_]+); PASSWD ([\\w-_#!]+); UPLOAD (\\d+);\r\n(.+)$";
+
+    ServerObradaDretva(MeteoPodaciDretva mpd, BP_Konfiguracija konfig_BP, Socket socket) {
+        this.mpd = mpd;
+        this.konfig_BP = konfig_BP;
+        this.socket = socket;
+    }
+
+    @Override
+    public void interrupt() {
+        super.interrupt(); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public void run() {
+        InputStream is = null;
+        OutputStream os = null;
+
+        String komanda = "";
+        String odgovor = "";
+
+        try {
+            is = socket.getInputStream();
+            os = socket.getOutputStream();
+
+            StringBuilder sb = new StringBuilder();
+
+            while (is.available() > 0) {
+                int znak = is.read();
+                if (znak == -1) {
+                    break;
+                }
+                sb.append((char) znak);
+            }
+
+            komanda = sb.toString();
+
+            String[] zahtjev = komanda.split(";");
+            int duzina = zahtjev.length;
+        } catch (IOException ex) {
+            //exception za is i os
+            Logger.getLogger(ServerObradaDretva.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
+    }
+
+    @Override
+    public synchronized void start() {
+        super.start(); //To change body of generated methods, choose Tools | Templates.
+    }
+
+}

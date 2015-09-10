@@ -1,0 +1,144 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package org.foi.nwtis.majugurci.socketServer;
+
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import static java.lang.Thread.sleep;
+import java.net.ConnectException;
+import java.net.Socket;
+import java.util.Arrays;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+/**
+ *
+ * @author Mario
+ */
+public class TESTServerSocketDretva extends Thread {
+
+    @Override
+    public void interrupt() {
+        super.interrupt(); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public void run() {
+        //String komanda = "USER pero; PASSWD 123456;"; //ispravna
+        //String komanda = "USER pero111; PASSWD 123456;";  //neispravna
+        //String komanda = "USER admin; PASSWD 123456; PAUSE;"; //ispravna
+        //String komanda = "USER pero; PASSWD 123456; PAUSE;"; //neispravna
+        //String komanda = "USER admin; PASSWD 123456; START;"; //ispravna
+        //String komanda = "USER pero; PASSWD 123456; START;"; //neispravna
+        //String komanda = "USER admin; PASSWD 123456; STOP;"; //ispravna
+        //String komanda = "USER pero; PASSWD 123456; STOP;"; //neispravna
+        //String komanda = "USER admin; PASSWD 123456; ADMIN pero;"; //ispravna
+        //String komanda = "USER pero; PASSWD 123456; ADMIN pero;"; //neispravna
+        //String komanda = "USER admin; PASSWD 123456; NOADMIN pero;"; //ispravna
+        //String komanda = "USER pero; PASSWD 123456; NOADMIN pero;"; //neispravna
+        //String komanda = "USER admin; PASSWD 123456; DOWNLOAD;"; //ispravna
+        //String komanda = "USER admin; PASSWD 123456; DOWNLOAD;"; //ispravna
+        //String komanda = "USER admin; PASSWD 123456; ADD \"Varaždin, Pavlinska 4\";"; //ispravna
+        //String komanda = "USER admin; PASSWD 123456; TEST \"Varaždin, Pavlinska 4\";"; //ispravna
+        //String komanda = "USER admin; PASSWD 123456; GET \"Varaždin, Pavlinska 2\";"; //ispravna
+        //String komanda = "USER admin; PASSWD 123456; TYPE;"; //ispravna
+        //String komanda = "USER admin; PASSWD 123456; UPLOAD 5; 05"; //ispravna
+        //String komanda = "ADD daVinci; PASSWD 123456;"; //ispravna
+        
+        String komanda = "USER pero; PASSWD 123456; TEST \"Varaždin, Pavlinska 4\";"; //ispravna
+
+        try {
+            Socket socket = new Socket("localhost", 8000);
+
+            InputStream is = socket.getInputStream();
+            OutputStream os = socket.getOutputStream();
+/*
+            File dat = new File("proba.xml");
+
+            byte[] mybytearray = new byte[(int) dat.length()];
+            BufferedInputStream bis = new BufferedInputStream(new FileInputStream(dat));
+            bis.read(mybytearray, 0, mybytearray.length);
+            String procitanaDatoteka = Arrays.toString(mybytearray);
+            int velicinaDatoteke = mybytearray.length;
+            
+            komanda = "USER admin; PASSWD 123456; UPLOAD "
+                        + velicinaDatoteke + ";" + procitanaDatoteka;*/
+
+            os.write(komanda.getBytes("ISO-8859-2"));
+            os.flush();
+
+            socket.shutdownOutput();
+
+            StringBuilder sb = new StringBuilder();
+
+            /*
+             Klijent ceka do 5 sekundi na odgovor servera
+             */
+            for (int i = 0; i < 100; i++) {
+                if (is.available() > 0) {
+                    while (is.available() > 0) {
+                        int znak = is.read();
+                        if (znak == -1) {
+                            break;
+                        }
+                        sb.append((char) znak);
+                    }
+                    break;
+                } else {
+                    sleep(50);
+                }
+
+            }
+
+            System.out.println(sb.toString());
+
+            if (is != null) {
+                try {
+                    is.close();
+                } catch (IOException ex) {
+                    Logger.getLogger(TESTServerSocket.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+
+            if (os != null) {
+                try {
+                    os.close();
+                } catch (IOException ex) {
+                    Logger.getLogger(TESTServerSocket.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+
+            if (socket != null) {
+                try {
+                    socket.close();
+                } catch (IOException ex) {
+                    Logger.getLogger(TESTServerSocket.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+        } catch (ConnectException ex) {
+            System.out.println("Server je ugasen");
+        } catch (IOException ex) {
+            Logger.getLogger(TESTServerSocket.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (InterruptedException ex) {
+            Logger.getLogger(TESTServerSocketDretva.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+
+    @Override
+    public synchronized void start() {
+        super.start(); //To change body of generated methods, choose Tools | Templates.
+    }
+
+}

@@ -1,0 +1,216 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package org.foi.nwtis.majugurci.web.kontrole;
+
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletConfig;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import org.foi.nwtis.majugurci.konfiguracije.Konfiguracija;
+import org.foi.nwtis.majugurci.konfiguracije.bp.BP_Konfiguracija;
+import org.foi.nwtis.majugurci.socketServer.ServerObradaDretva;
+
+/**
+ *
+ * @author Mario
+ */
+public class Kontroler extends HttpServlet {
+
+    private String server;
+    private String baza;
+    private String korisnik;
+    private String lozinka;
+    private String driver;
+
+    public Kontroler() {
+
+    }
+
+    @Override
+    public void init() throws ServletException {
+        Konfiguracija konfig = (Konfiguracija) getServletContext().getAttribute("konfigRazno");
+        BP_Konfiguracija bpk = (BP_Konfiguracija) getServletContext().getAttribute("konfigBP");
+
+        server = bpk.getServer_database();
+        baza = server + bpk.getUser_database();
+        korisnik = bpk.getUser_username();
+        lozinka = bpk.getUser_password();
+        driver = bpk.getDriver_database(server);
+    }
+
+    /**
+     * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
+     * methods.
+     *
+     * @param request servlet request
+     * @param response servlet response
+     * @throws ServletException if a servlet-specific error occurs
+     * @throws IOException if an I/O error occurs
+     */
+    protected void processRequest(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        response.setContentType("text/html;charset=UTF-8");
+
+        String zahtjev = request.getServletPath();
+        String odrediste = null;
+
+        System.out.println("Zahtjev iz kontrolera: " + zahtjev);
+
+        switch (zahtjev) {
+            case "/Kontroler":
+                odrediste = "/jsp/index.jsp";
+                break;
+            case "/PrijavaKorisnika":
+                odrediste = "/jsp/login.jsp";
+                break;
+            case "/ProvjeraKorisnika":
+                String korisnik = request.getParameter("korisnik");
+                String lozinka = request.getParameter("lozinka");
+                if (korisnik == null || korisnik.trim().isEmpty()
+                        || lozinka == null || lozinka.trim().isEmpty()) {
+                    throw new NeuspjesnaPrijava("Nisu upisani potrebni podaci.");
+                } else {
+                    //provjera u bazi podataka
+                    Korisnik k = dajKorisnickePodatke(korisnik, lozinka);
+                    if (k == null) {
+                        throw new NeuspjesnaPrijava("Problem pri spajanju na bazu podataka.");
+                    } else {
+                        if (k.getKorisnickoIme() == null) {
+                            throw new NeuspjesnaPrijava("Nisu upisani ispravni podaci.");
+                        } else {
+                            HttpSession hs = request.getSession(true);
+                            List korisnici = (List) hs.getAttribute("korisnik");
+                            if (korisnici.contains(k)) {
+                                throw new NeuspjesnaPrijava("Već ste prijavljeni u sustav.");
+                            } else {
+                                hs.setAttribute("korisnik", k);
+                                odrediste = "/IspisPodataka";
+                            }
+                        }
+                    }
+                }
+                break;
+            case "/OdjavaKorisnika":
+                HttpSession hs = request.getSession(false);
+                if (hs != null) {
+                    hs.removeAttribute("korisnik");
+                    hs.invalidate();
+                } else {
+                    throw new NeuspjesnaPrijava("Samo prijavljeni korisnici se mogu odjaviti.");
+                }
+                odrediste = "/Kontroler";
+                break;
+        }
+        if (odrediste == null) {
+            throw new ServletException("Zahtjev: '" + zahtjev + "' nije poznat.");
+        }
+        RequestDispatcher rd = this.getServletContext().getRequestDispatcher(odrediste);
+        rd.forward(request, response);
+    }
+
+    // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
+    /**
+     * Handles the HTTP <code>GET</code> method.
+     *
+     * @param request servlet request
+     * @param response servlet response
+     * @throws ServletException if a servlet-specific error occurs
+     * @throws IOException if an I/O error occurs
+     */
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        processRequest(request, response);
+    }
+
+    /**
+     * Handles the HTTP <code>POST</code> method.
+     *
+     * @param request servlet request
+     * @param response servlet response
+     * @throws ServletException if a servlet-specific error occurs
+     * @throws IOException if an I/O error occurs
+     */
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        processRequest(request, response);
+    }
+
+    /**
+     * Returns a short description of the servlet.
+     *
+     * @return a String containing servlet description
+     */
+    @Override
+    public String getServletInfo() {
+        return "Short description";
+    }// </editor-fold>
+
+    private Korisnik dajKorisnickePodatke(String korisnik, String lozinka) {
+
+        /*Konfiguracija konfig = (Konfiguracija) getServletContext().getAttribute("KonfigRazno");
+         BP_Konfiguracija bpk = (BP_Konfiguracija) getServletContext().getAttribute("KonfigBP");
+
+         server = bpk.getServer_database();
+         baza = server + bpk.getUser_database();
+         korisnik = bpk.getUser_username();
+         lozinka = bpk.getUser_password();
+         driver = bpk.getDriver_database(server);*/
+        Korisnik k = new Korisnik();
+
+        try {
+            Class.forName(driver);
+        } catch (ClassNotFoundException ex) {
+            Logger.getLogger(Kontroler.class.getName()).log(Level.SEVERE, null, ex);
+            return null;
+        }
+
+        String sqlUpit = "SELECT * FROM majugurci_korisnici "
+                + "WHERE korisnicko_ime= ? AND lozinka = ?";
+
+        try (Connection con = DriverManager.getConnection(this.baza, this.korisnik, this.lozinka);
+                PreparedStatement ps = con.prepareStatement(sqlUpit);) {
+
+            ps.setString(1, korisnik);
+            ps.setString(2, lozinka);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    k.setKorisnickoIme(rs.getString("korisnicko_ime"));
+                    k.setGrupa(rs.getInt("grupa"));
+                    k.setEmail(rs.getString("email"));
+                    k.setSredstva(rs.getFloat("sredstva"));
+                    java.sql.Timestamp vrijemeSql = rs.getTimestamp("vrijeme_registracije");
+                    java.util.Date vrijemeJava = new java.sql.Date(vrijemeSql.getTime());
+                    k.setVrijemeRegistracije(vrijemeJava);
+
+                    return k;
+                } else {
+                    return new Korisnik();
+                }
+            }
+
+        } catch (SQLException ex) {
+            Logger.getLogger(ServerObradaDretva.class.getName()).log(Level.SEVERE, null, ex);
+            return null;
+        }
+    }
+
+}

@@ -1,0 +1,133 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package org.foi.nwtis.majugurci.web.zrna;
+
+import java.util.ResourceBundle;
+import javax.annotation.PostConstruct;
+import javax.ejb.EJB;
+import javax.faces.application.FacesMessage;
+import javax.faces.bean.ManagedBean;
+import javax.faces.bean.RequestScoped;
+import javax.faces.context.FacesContext;
+import javax.servlet.http.HttpSession;
+import org.foi.nwtis.majugurci.ejb.eb.MajugurciKorisnici;
+import org.foi.nwtis.majugurci.ejb.sb.MajugurciKorisniciFacade;
+import org.foi.nwtis.majugurci.web.podaci.Korisnik;
+
+/**
+ *
+ * @author Mario
+ */
+@ManagedBean
+@RequestScoped
+public class NadopunaPodataka {
+
+    @EJB
+    private MajugurciKorisniciFacade majugurciKorisniciFacade;
+
+    private String korisnickoIme;
+    private String novaLozinka;
+    private String novaLozinkaPotvrda;
+    private String email;
+    private String vrijemeRegistracije;
+    
+    MajugurciKorisnici mk;
+    
+    ResourceBundle bundle;
+
+    /**
+     * Creates a new instance of NadopunaPodataka
+     */
+    public NadopunaPodataka() {
+    }
+
+    @PostConstruct
+    public void init() {
+        FacesContext context = FacesContext.getCurrentInstance();
+        bundle = context.getApplication().getResourceBundle(context, "m");
+        HttpSession session = (HttpSession) context.getExternalContext().getSession(false);
+
+        Korisnik k = (Korisnik) session.getAttribute("korisnik");
+
+        mk = majugurciKorisniciFacade.findByKorisnik(k.getKorisnickoIme()).get(0);
+
+        this.korisnickoIme = mk.getKorisnickoIme();
+        this.vrijemeRegistracije = mk.getVrijemeRegistracije().toString();
+        this.email = mk.getEmail();
+        this.novaLozinka = "";
+        this.novaLozinkaPotvrda = "";
+    }
+
+    public String getKorisnickoIme() {
+        return korisnickoIme;
+    }
+
+    public void setKorisnickoIme(String korisnickoIme) {
+        this.korisnickoIme = korisnickoIme;
+    }
+
+    public String getNovaLozinka() {
+        return novaLozinka;
+    }
+
+    public void setNovaLozinka(String novaLozinka) {
+        this.novaLozinka = novaLozinka;
+    }
+
+    public String getNovaLozinkaPotvrda() {
+        return novaLozinkaPotvrda;
+    }
+
+    public void setNovaLozinkaPotvrda(String novaLozinkaPotvrda) {
+        this.novaLozinkaPotvrda = novaLozinkaPotvrda;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getVrijemeRegistracije() {
+        return vrijemeRegistracije;
+    }
+
+    public void setVrijemeRegistracije(String vrijemeRegistracije) {
+        this.vrijemeRegistracije = vrijemeRegistracije;
+    }
+
+    public String nadopuniPodatke() {
+        FacesContext fc = FacesContext.getCurrentInstance();
+
+        if (email.trim().equals("")) {
+            fc.addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR, bundle.getString("nadopuniPodatke_greksaUnesiteMail"), null));
+            return "ERROR";
+        }
+
+        if (novaLozinka.trim().equals("") && novaLozinkaPotvrda.trim().equals("")) {
+            //korisnik ne zeli mijenjati lozinku
+        } else {
+            if (!novaLozinka.equals(novaLozinkaPotvrda)) {
+                //korisnik zeli promijeniti lozinku ali je unio razlicite u polja
+                fc.addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR, bundle.getString("nadopuniPodatke_greskaRazliciteLozinke"), null));
+                return "ERROR";
+            } else {
+                mk.setLozinka(novaLozinka);
+            }
+        }
+        
+        mk.setEmail(email);
+        
+        mk.setPrvaPrijava(0);
+        
+        majugurciKorisniciFacade.edit(mk);
+
+        return "OK";
+    }
+
+}

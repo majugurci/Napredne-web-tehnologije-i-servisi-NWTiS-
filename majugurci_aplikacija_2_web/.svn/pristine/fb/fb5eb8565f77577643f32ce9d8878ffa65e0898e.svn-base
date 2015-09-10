@@ -1,0 +1,49 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package org.foi.nwtis.majugurci.web.zrna;
+
+import java.util.Date;
+import java.util.List;
+import java.util.Locale;
+import javax.annotation.PostConstruct;
+import javax.ejb.EJB;
+import javax.faces.bean.ManagedBean;
+import javax.faces.bean.SessionScoped;
+import javax.faces.bean.ViewScoped;
+import org.foi.nwtis.majugurci.ejb.eb.MajugurciDnevnik;
+import org.foi.nwtis.majugurci.ejb.sb.MajugurciDnevnikFacade;
+
+/**
+ *
+ * @author Mario
+ */
+@ManagedBean
+@ViewScoped
+public class PregledDnevnika {
+    @EJB
+    private MajugurciDnevnikFacade majugurciDnevnikFacade;
+
+    private List<MajugurciDnevnik> zapisiDnevnika;
+
+    /**
+     * Creates a new instance of PregledDnevnika
+     */
+    public PregledDnevnika() {
+    }
+    
+    @PostConstruct
+    public void init() {
+        zapisiDnevnika = majugurciDnevnikFacade.findAll();
+    }
+
+    public List<MajugurciDnevnik> getZapisiDnevnika() {
+        return zapisiDnevnika;
+    }
+
+    public void setZapisiDnevnika(List<MajugurciDnevnik> zapisiDnevnika) {
+        this.zapisiDnevnika = zapisiDnevnika;
+    }
+}

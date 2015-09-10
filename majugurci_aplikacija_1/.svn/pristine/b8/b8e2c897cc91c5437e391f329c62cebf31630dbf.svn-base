@@ -1,0 +1,9 @@
+select k.korisnicko_ime, k.lozinka from majugurci_korisnici k 
+JOIN majugurci_grupe g ON k.grupa = g.id_grupa
+WHERE g.opis='admin';
+
+//brisanje sa foreign key-om
+SET FOREIGN_KEY_CHECKS=0;
+DELETE FROM majugurci_adrese
+WHERE id_adresa=18;
+SET FOREIGN_KEY_CHECKS=1;

@@ -1,0 +1,29 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package org.foi.nwtis.majugurci.socketServer;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import static java.lang.Thread.sleep;
+import java.net.Socket;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+/**
+ *
+ * @author Mario
+ */
+public class TESTServerSocket {
+
+    //TODO obrisi ovu test klasu
+    public static void main(String[] args) {
+        
+        new TESTServerSocketDretva().start();
+
+    }
+
+}

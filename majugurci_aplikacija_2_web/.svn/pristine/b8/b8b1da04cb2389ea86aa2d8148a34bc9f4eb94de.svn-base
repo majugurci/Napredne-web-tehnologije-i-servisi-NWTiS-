@@ -1,0 +1,63 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package org.foi.nwtis.majugurci.web.zrna;
+
+import java.util.LinkedList;
+import java.util.List;
+import javax.ejb.LocalBean;
+import javax.ejb.Singleton;
+import org.foi.nwtis.majugurci.web.podaci.Korisnik;
+
+/**
+ *
+ * @author Mario
+ */
+@Singleton
+@LocalBean
+public class AplikacijaKorisnici{
+
+    private List<Korisnik> korisnici;
+    
+    public AplikacijaKorisnici() {
+        korisnici = new LinkedList<>();
+    }
+
+    public List<Korisnik> getKorisnici() {
+        return korisnici;
+    }
+
+    public void setKorisnici(List<Korisnik> korisnici) {
+        this.korisnici = korisnici;
+    }
+    
+    public boolean dodajKorisnika(Korisnik korisnik) {
+        if (korisnici.contains(korisnik)) {
+            return false;
+        } else {
+            korisnici.add(korisnik);
+            return true;
+        }
+    }
+    
+    public boolean ukloniKorisnika(String korisnik) {
+        for (Korisnik k : korisnici) {
+            if (k.getKorisnickoIme().equals(korisnik)) {
+                korisnici.remove(k);
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    public boolean ukloniKorisnika(Korisnik korisnik) {
+        if (korisnici.contains(korisnik)) {
+            korisnici.remove(korisnik);
+            return true;
+        } else {
+            return false;
+        }
+    }
+}

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
+<properties>
+<comment>NWTIS konfiguracija</comment>
+<entry key="server">localhost</entry>
+<entry key="port">8000</entry>
+<entry key="dretva.interval">120</entry> <!-- u sekundama -->
+<entry key="openWeatherMap.key">8982e57cb28f088feec2962ae6393c03</entry>
+<entry key="mail.server">127.0.0.1</entry>
+<entry key="mail.port">-1</entry> <!-- -1 oznacava defaultni port -->
+<entry key="mail.posiljatelj">servis@nwtis.nastava.foi.hr</entry>
+<entry key="mail.posiljatelj.lozinka">123456</entry>
+<entry key="mail.primatelj">majugurci@nwtis.nastava.foi.hr</entry>
+<entry key="mail.poruka.predmet">NWTiS poruka</entry>
+</properties>
