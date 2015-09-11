@@ -28,3 +28,9 @@ Third task is a user interface in JSP. User authentication is realized through w
 - The administrator can view logs from DB, can change the role of the user (through calls to server socket), can read and manage email messages, and can manage price list of first application through calls to the server socket.
 - Third task is REST service which gives a list of all currently logged in users.
 
+<br><b>Third application:</b> 
+- Glassfish web app, EE/ with annotations, user interface: JSF (facelets) or PrimeFaces, DB: none, use of JMS messages, use of websocket for refreshing messages view, use of the socket server, use of the REST web service of second app.
+- Application has EJB and Web modules
+- First task is to process JMS messages in background thread. Application reads messages and checks whether address from the message is in DB of first application (through a call to socket server), and if it is not sends new command to the socket server to add it. All JMS messages are saved to application memory. If the application stops running all messages must be saved to disk through serialization. On restart messages must be deserialized.
+- Second task is user interface. The User can read and delete JMS messages. The User can create a new user by sending command through server socket. With the help of websocket user must be informed if the new JMS message has arrived. By calling operations of the REST service of second app user can get a list of all logged in users in second app. For each user there is an option to show addresses which user added, for each address option to show last weather data. 
+- There is also one screen where user can send commands to the socket server and get a response (supervision).
